@@ -92,7 +92,20 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public void deleteObjectsInDirectory(String bucketName, String directoryName) {
+        ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
+                .withBucketName(bucketName)
+                .withPrefix(directoryName + "/");
 
+        ListObjectsV2Result result;
+        do {
+            result = amazonS3.listObjectsV2(listObjectsRequest);
+            List<S3ObjectSummary> objects = result.getObjectSummaries();
+            for (S3ObjectSummary os : objects) {
+                amazonS3.deleteObject(bucketName, os.getKey());
+            }
+            String token = result.getNextContinuationToken();
+            listObjectsRequest.setContinuationToken(token);
+        } while (result.isTruncated());
     }
 
     @Autowired

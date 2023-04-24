@@ -35,12 +35,12 @@ public class S3Config {
     @Value("{$s3.bucketName}")
     private String bucketName;
 
-    @Value("{$s3.quotaBytes}")
-    private Long quotaBytes;
-
-
-    // TODO: 4/24/2023  https://s3.amazonaws.com/BUCKET_NAME?quota&quota-type=storage&storage-type=standard&bytes=QUOTA_BYTES
-    String endpoint = "https://s3.amazonaws.com/" + bucketName + "?quota&quota-type=storage&storage-type=standard&bytes=" + quotaBytes;
+//    @Value("{$s3.quotaBytes}")
+//    private Long quotaBytes;
+//
+//
+//    // TODO: 4/24/2023  https://s3.amazonaws.com/BUCKET_NAME?quota&quota-type=storage&storage-type=standard&bytes=QUOTA_BYTES
+//    String endpoint = "https://s3.amazonaws.com/" + bucketName + "?quota&quota-type=storage&storage-type=standard&bytes=" + quotaBytes;
 
     String auth = awsAccessKey + ":" + awsSecretKey;
     String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
