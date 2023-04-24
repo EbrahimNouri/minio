@@ -46,6 +46,8 @@ dependencies {
 
     implementation 'software.amazon.awssdk:s3:2.20.26'
 
+// https://mvnrepository.com/artifact/software.amazon.awssdk/netty-nio-client
+    testImplementation group: 'software.amazon.awssdk', name: 'netty-nio-client', version: '2.20.51'
 
 
 

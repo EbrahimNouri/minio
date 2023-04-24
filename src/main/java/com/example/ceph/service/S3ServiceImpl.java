@@ -5,20 +5,24 @@ import java.util.List;
 
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
+import com.example.ceph.util.S3Util;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 
 import com.amazonaws.services.s3.AmazonS3;
-import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 public class S3ServiceImpl implements S3Service {
 
     private final AmazonS3 amazonS3;
 
-    public S3ServiceImpl(AmazonS3 amazonS3) {
+    private final S3Util s3Util;
+
+    public S3ServiceImpl(AmazonS3 amazonS3, S3Util s3Util) {
         this.amazonS3 = amazonS3;
+        this.s3Util = s3Util;
     }
 
     @Override
@@ -88,28 +92,12 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public void deleteObjectsInDirectory(String bucketName, String directoryName) {
-        ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
-                .withBucketName(bucketName)
-                .withPrefix(directoryName + "/");
 
-        ListObjectsV2Result result;
-        do {
-            result = amazonS3.listObjectsV2(listObjectsRequest);
-            List<S3ObjectSummary> objects = result.getObjectSummaries();
-            for (S3ObjectSummary os : objects) {
-                amazonS3.deleteObject(bucketName, os.getKey());
-            }
-            String token = result.getNextContinuationToken();
-            listObjectsRequest.setContinuationToken(token);
-        } while (result.isTruncated());
     }
 
-//    public void setBucketQuota(String bucketName, long quotaBytes) {
-//        S3Client s3Client = S3Client.create();
-//        PutBucketQuotaRequest putBucketQuotaRequest = PutBucketQuotaRequest.builder()
-//                .bucket(bucketName)
-//                .quota(quotaBytes)
-//                .build();
-//        s3Client.putBucketQuota(putBucketQuotaRequest);
-//    }
+    @Autowired
+    public void setBucketQuota(/*String bucketName, long quotaBytes*/) {
+        s3Util.setBucketQuota(/*bucketName, quotaBytes*/);
+    }
+
 }

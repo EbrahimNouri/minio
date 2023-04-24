@@ -13,6 +13,9 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 @Configuration
 @EnableContextInstanceData
 public class S3Config {
@@ -29,12 +32,27 @@ public class S3Config {
     @Value("${s3.region}")
     private String s3Region;
 
+    @Value("{$s3.bucketName}")
+    private String bucketName;
+
+    @Value("{$s3.quotaBytes}")
+    private Long quotaBytes;
+
+
+    // TODO: 4/24/2023  https://s3.amazonaws.com/BUCKET_NAME?quota&quota-type=storage&storage-type=standard&bytes=QUOTA_BYTES
+    String endpoint = "https://s3.amazonaws.com/" + bucketName + "?quota&quota-type=storage&storage-type=standard&bytes=" + quotaBytes;
+
+    String auth = awsAccessKey + ":" + awsSecretKey;
+    String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+
+
     @Bean
     @Primary
     public AmazonS3 amazonS3() {
         BasicAWSCredentials awsCredentials = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
 
-        AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(s3EndpointUrl, s3Region);
+        AwsClientBuilder.EndpointConfiguration endpointConfiguration =
+                new AwsClientBuilder.EndpointConfiguration(s3EndpointUrl, s3Region);
 
         return AmazonS3ClientBuilder
                 .standard()
@@ -42,5 +60,4 @@ public class S3Config {
                 .withEndpointConfiguration(endpointConfiguration)
                 .build();
     }
-
 }
