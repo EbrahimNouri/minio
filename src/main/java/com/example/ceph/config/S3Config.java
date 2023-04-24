@@ -1,6 +1,5 @@
 package com.example.ceph.config;
 
-import com.amazonaws.regions.Regions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.context.config.annotation.EnableContextInstanceData;
 import org.springframework.context.annotation.Bean;
@@ -13,8 +12,6 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 @Configuration
 @EnableContextInstanceData
@@ -32,8 +29,8 @@ public class S3Config {
     @Value("${s3.region}")
     private String s3Region;
 
-    @Value("{$s3.bucketName}")
-    private String bucketName;
+//    @Value("{$s3.bucketName}")
+//    private String bucketName;
 
 //    @Value("{$s3.quotaBytes}")
 //    private Long quotaBytes;
@@ -41,9 +38,9 @@ public class S3Config {
 //
 //    // TODO: 4/24/2023  https://s3.amazonaws.com/BUCKET_NAME?quota&quota-type=storage&storage-type=standard&bytes=QUOTA_BYTES
 //    String endpoint = "https://s3.amazonaws.com/" + bucketName + "?quota&quota-type=storage&storage-type=standard&bytes=" + quotaBytes;
-
-    String auth = awsAccessKey + ":" + awsSecretKey;
-    String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+//
+//    String auth = awsAccessKey + ":" + awsSecretKey;
+//    String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
 
 
     @Bean

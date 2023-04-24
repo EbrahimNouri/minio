@@ -16,5 +16,4 @@ public interface S3Service {
 
     void deleteObjectsInDirectory(String bucketName, String directoryName);
 
-
 }

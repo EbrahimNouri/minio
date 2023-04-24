@@ -49,6 +49,10 @@ dependencies {
 // https://mvnrepository.com/artifact/software.amazon.awssdk/netty-nio-client
     testImplementation group: 'software.amazon.awssdk', name: 'netty-nio-client', version: '2.20.51'
 
+    // https://mvnrepository.com/artifact/org.projectlombok/lombok
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'
+
+
 
 
 

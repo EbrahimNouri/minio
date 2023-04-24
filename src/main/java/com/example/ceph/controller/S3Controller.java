@@ -1,13 +1,10 @@
 package com.example.ceph.controller;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
 
-import com.amazonaws.services.s3.model.*;
 import com.example.ceph.service.S3Service;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,8 +15,13 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 public class S3Controller {
 
-    @Autowired
-    private S3Service s3Service;
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final S3Service s3Service;
+
+    public S3Controller(S3Service s3Service) {
+        this.s3Service = s3Service;
+    }
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("bucketName") String bucketName,
@@ -45,9 +47,9 @@ public class S3Controller {
         }
     }
 
-    @GetMapping("/file/{objectKey}")
-    public ResponseEntity<byte[]> downloadFile(@RequestParam("objectKey") String objectKey,
-                                               @RequestParam("bucketName") String bucketName) throws IOException {
+    @GetMapping("/download/{objectKey}")
+    public ResponseEntity<byte[]> downloadFile(@RequestParam("bucketName") String bucketName,
+                                               @PathVariable String objectKey) throws IOException {
 
         byte[] data = s3Service.readFileFromS3(bucketName, objectKey);
 
@@ -76,6 +78,10 @@ public class S3Controller {
 
         s3Service.deleteObjectsInDirectory(bucketName, directoryName);
 
-        return ResponseEntity.ok("All objects in directory deleted successfully");
+        String message = "All objects in directory deleted successfully";
+
+        logger.debug(message);
+
+        return ResponseEntity.ok(message);
     }
 }

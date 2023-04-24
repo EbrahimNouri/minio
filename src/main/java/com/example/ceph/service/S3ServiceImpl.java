@@ -6,6 +6,9 @@ import java.util.List;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.example.ceph.util.S3Util;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,8 +17,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.amazonaws.services.s3.AmazonS3;
 
 @Service
+@Slf4j
 public class S3ServiceImpl implements S3Service {
 
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final AmazonS3 amazonS3;
 
     private final S3Util s3Util;
@@ -27,6 +32,8 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public void uploadFile(String bucketName, String objectKey, MultipartFile file) throws IOException {
+
+        logger.info("Uploading file");
 
         ObjectMetadata metadata = new ObjectMetadata();
 
@@ -43,6 +50,8 @@ public class S3ServiceImpl implements S3Service {
 
             amazonS3.putObject(request);
         } else {
+
+            logger.info("Uploading file failed");
             throw new FileNotFoundException("size file more than" + sizeLimit / 1_048_576 + " megabytes");
         }
 
@@ -50,11 +59,13 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public void deleteFile(String bucketName, String objectKey) {
+        logger.debug("deleting file");
         amazonS3.deleteObject(bucketName, objectKey);
     }
 
     @Override
     public byte[] readFileFromS3(String bucketName, String objectKey) throws IOException {
+
         AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
 
         S3Object s3Object = s3Client.getObject(bucketName, objectKey);
@@ -70,6 +81,8 @@ public class S3ServiceImpl implements S3Service {
         byte[] data = outputStream.toByteArray();
         outputStream.close();
         inputStream.close();
+
+        logger.info("reading data from S3 bucket {}", bucketName);
 
         return data;
     }
@@ -87,6 +100,8 @@ public class S3ServiceImpl implements S3Service {
         PutObjectRequest request = new PutObjectRequest(bucketName, key, emptyInputStream, metadata);
 
         // Upload the empty object to S3
+
+        logger.info("Uploading directory {}", directoryName);
         amazonS3.putObject(request);
     }
 
@@ -106,11 +121,14 @@ public class S3ServiceImpl implements S3Service {
             String token = result.getNextContinuationToken();
             listObjectsRequest.setContinuationToken(token);
         } while (result.isTruncated());
+
+        logger.info("ListObjectsV2 Response from Amazon S3 bucket " + bucketName + " running");
     }
 
     @Autowired
     public void setBucketQuota(/*String bucketName, long quotaBytes*/) {
         s3Util.setBucketQuota(/*bucketName, quotaBytes*/);
+        logger.info("limiting space storage");
     }
 
 }
