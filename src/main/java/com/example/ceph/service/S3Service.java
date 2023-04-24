@@ -16,4 +16,5 @@ public interface S3Service {
 
     void deleteObjectsInDirectory(String bucketName, String directoryName);
 
+    void setBucketQuota(/*String bucketName, long quotaBytes*/);
 }

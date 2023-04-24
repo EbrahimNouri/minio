@@ -1,0 +1,45 @@
+/target/
+
+!.mvn/wrapper/maven-wrapper.jar
+/.gradle/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+/.idea
+
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+#.gradle/7.4.2/checksums/checksums.lock
+
+gradle/wrapper/gradle-wrapper.jar
+
+.gradle
+gradle/wrapper/gradle-wrapper.jar
+.mvn
+/certticicate_generation/openssl-1.1.1q/
+/certticicate_generation/certs/**
+/certticicate_generation/working_version/private/
+/certticicate_generation/working_version/server.crt
+/certticicate_generation/working_version/server.csr
+/certticicate_generation/working_version/certs
+/certticicate_generation/working_version/pfx.p12
+/certticicate_generation/thekeystore
+/.idea/
+

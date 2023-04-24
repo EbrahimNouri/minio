@@ -51,6 +51,9 @@ public class S3Config {
         AwsClientBuilder.EndpointConfiguration endpointConfiguration =
                 new AwsClientBuilder.EndpointConfiguration(s3EndpointUrl, s3Region);
 
+//        ClientConfiguration clientConfig = new ClientConfiguration();
+//        clientConfig.setProtocol(Protocol.HTTP);
+
         return AmazonS3ClientBuilder
                 .standard()
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))

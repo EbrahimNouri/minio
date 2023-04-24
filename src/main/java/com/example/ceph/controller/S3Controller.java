@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.example.ceph.service.S3Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,13 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 public class S3Controller {
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final S3Service s3Service;
+    @Autowired
+    private S3Service s3Service;
 
-    public S3Controller(S3Service s3Service) {
-        this.s3Service = s3Service;
-    }
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("bucketName") String bucketName,

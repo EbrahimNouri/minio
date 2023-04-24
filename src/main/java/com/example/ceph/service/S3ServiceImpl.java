@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,13 +18,15 @@ import org.springframework.web.multipart.MultipartFile;
 import com.amazonaws.services.s3.AmazonS3;
 
 @Service
-@Slf4j
 public class S3ServiceImpl implements S3Service {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final AmazonS3 amazonS3;
 
-    private final S3Util s3Util;
+    @Autowired
+    private AmazonS3 amazonS3;
+
+    @Autowired
+    private S3Util s3Util;
 
     public S3ServiceImpl(AmazonS3 amazonS3, S3Util s3Util) {
         this.amazonS3 = amazonS3;
@@ -125,7 +128,7 @@ public class S3ServiceImpl implements S3Service {
         logger.info("ListObjectsV2 Response from Amazon S3 bucket " + bucketName + " running");
     }
 
-    @Autowired
+    @Override
     public void setBucketQuota(/*String bucketName, long quotaBytes*/) {
         s3Util.setBucketQuota(/*bucketName, quotaBytes*/);
         logger.info("limiting space storage");
