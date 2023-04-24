@@ -104,12 +104,12 @@ public class S3ServiceImpl implements S3Service {
         } while (result.isTruncated());
     }
 
-    public void setBucketQuota(String bucketName, long quotaBytes) {
-        S3Client s3Client = S3Client.create();
-        PutBucketQuotaRequest putBucketQuotaRequest = PutBucketQuotaRequest.builder()
-                .bucket(bucketName)
-                .quota(quotaBytes)
-                .build();
-        s3Client.putBucketQuota(putBucketQuotaRequest);
-    }
+//    public void setBucketQuota(String bucketName, long quotaBytes) {
+//        S3Client s3Client = S3Client.create();
+//        PutBucketQuotaRequest putBucketQuotaRequest = PutBucketQuotaRequest.builder()
+//                .bucket(bucketName)
+//                .quota(quotaBytes)
+//                .build();
+//        s3Client.putBucketQuota(putBucketQuotaRequest);
+//    }
 }
