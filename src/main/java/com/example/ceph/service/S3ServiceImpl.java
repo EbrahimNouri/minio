@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
+import com.example.ceph.exception.FileSizeException;
 import com.example.ceph.util.S3Util;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class S3ServiceImpl implements S3Service {
         } else {
 
             logger.info("Uploading file failed");
-            throw new FileNotFoundException("size file more than" + sizeLimit / 1_048_576 + " megabytes");
+            throw new FileSizeException("size file more than" + sizeLimit / 1_048_576 + " megabytes");
         }
 
     }

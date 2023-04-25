@@ -20,7 +20,6 @@ public class S3Util {
 
 
         // TODO: 4/24/2023 change this
-        /*
         String policyJson = "{" +
                 "\"Version\":\"2012-10-17\"," +
                 "\"Statement\":[" +
@@ -36,9 +35,8 @@ public class S3Util {
                 "   }" +
                 "]" +
                 "}";
-                */
 
-        String policyJson = String.format("""
+        String policyJson1 = String.format("""
                 {
                    "Version":"2012-10-17",
                    "Statement":[
@@ -55,7 +53,7 @@ public class S3Util {
                    ]
                 }
                 """, bucketName, quotaBytes);
-
+//
         s3Client.setBucketPolicy(new SetBucketPolicyRequest(bucketName, policyJson));
     }
 
