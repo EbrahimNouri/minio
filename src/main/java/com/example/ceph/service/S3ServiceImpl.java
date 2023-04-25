@@ -1,27 +1,31 @@
 package com.example.ceph.service;
 
-import java.io.*;
-import java.util.List;
-
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.example.ceph.exception.FileSizeException;
 import com.example.ceph.util.S3Util;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-
-import com.amazonaws.services.s3.AmazonS3;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class S3ServiceImpl implements S3Service {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+//    @Value("${s3.maxAge}")
+    private int MAX_AGE_DAYS;
 
     @Autowired
     private AmazonS3 amazonS3;
@@ -52,7 +56,17 @@ public class S3ServiceImpl implements S3Service {
             PutObjectRequest request = new PutObjectRequest(
                     bucketName, objectKey, file.getInputStream(), new ObjectMetadata());
 
-            amazonS3.putObject(request);
+            PutObjectResult putObjectResult = amazonS3.putObject(request);
+
+            // for auto remove files
+            Date date = new Date();
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            calendar.add(Calendar.DATE, MAX_AGE_DAYS);
+            date = calendar.getTime();
+            putObjectResult.setExpirationTime(date);
+
+
         } else {
 
             logger.info("Uploading file failed");
