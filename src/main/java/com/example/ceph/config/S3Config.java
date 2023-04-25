@@ -6,20 +6,19 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.cloud.aws.context.config.annotation.EnableContextInstanceData;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 
-@Configuration
+@Component
 @EnableContextInstanceData
 public class S3Config {
 
 //    @Value("${aws.access.key}")
-    private String awsAccessKey = "AKIAIOSFODNN7EXAMPLE";
+    private String awsAccessKey = null;
 
 //    @Value("${aws.secret.key}")
-    private String awsSecretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+    private String awsSecretKey = null;
 
 //    @Value("${s3.endpoint.url}")
     private String s3EndpointUrl = "78.157.35.83:8448";
@@ -41,7 +40,6 @@ public class S3Config {
 //    String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
 
 
-    @Bean
     @Primary
     public AmazonS3 amazonS3() {
         BasicAWSCredentials awsCredentials = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
