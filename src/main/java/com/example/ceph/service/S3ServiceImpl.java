@@ -1,12 +1,14 @@
 package com.example.ceph.service;
 
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.util.IOUtils;
 import com.example.ceph.exception.FileSizeException;
 import com.example.ceph.util.S3Util;
@@ -194,8 +196,8 @@ public class S3ServiceImpl implements S3Service {
                     .build();
         } while(result.isTruncated());
 
-        System.out.println("Total number of objects in bucket: " + totalObjects);
-        System.out.println("Total size of objects in bucket: " + totalSize + " bytes");
+        logger.debug("Total number of objects in bucket: " + totalObjects);
+        logger.debug("Total size of objects in bucket: " + totalSize + " bytes");
 
         GetBucketLoggingRequest loggingConfigRequest = GetBucketLoggingRequest.builder()
                 .bucket(bucketName)
@@ -216,5 +218,38 @@ public class S3ServiceImpl implements S3Service {
             logger.debug("Total size of access logs: " + size + " bytes");
         }
     }
+
+    // TODO: 4/30/2023 must be checked
+    public void backupDirectory(S3Client s3Client, String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException {
+        ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder()
+                .bucket(bucketName)
+                .prefix(sourceKeyPrefix)
+                .build();
+
+        ListObjectsResponse listObjectsResponse = s3Client.listObjects(listObjectsRequest);
+        List<S3Object> s3Objects = listObjectsResponse.contents();
+
+        for (S3Object s3Object : s3Objects) {
+            String key = s3Object.key();
+            String destinationFilePath = destinationPath + "/" + key.substring(sourceKeyPrefix.length());
+
+            if (s3Object.size() > 0) {
+                File file = new File(destinationFilePath);
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+
+                GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build();
+
+                s3Client.getObject(getObjectRequest, ResponseTransformer.toFile(file));
+            } else {
+                File directory = new File(destinationFilePath);
+                directory.mkdirs();
+            }
+        }
+    }
+
 
 }
