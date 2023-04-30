@@ -20,11 +20,8 @@ public class S3Util {
     @Autowired
     private S3Client s3Client;
 
-//    @Value("${s3.bucketName}")
-    private String bucketName = "debugger";
-
-//    @Value("${s3.quotaBytes}")
-    private Long quotaBytes = 10737418240L;
+    //    @Value("${s3.quotaBytes}")
+    private final Long quotaBytes = 10737418240L;
 
 //    @Value("${s3.maxAge}")
 //    private int MAX_AGE_DAYS;
@@ -34,6 +31,8 @@ public class S3Util {
 
 
         // TODO: 4/24/2023 change this
+        //    @Value("${s3.bucketName}")
+        String bucketName = "debugger";
         String policyJson = "{" +
                 "\"Version\":\"2012-10-17\"," +
                 "\"Statement\":[" +
