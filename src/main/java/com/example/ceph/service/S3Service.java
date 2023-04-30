@@ -10,7 +10,7 @@ public interface S3Service {
 
     void deleteFile(String bucketName, String objectKey);
 
-    byte[] readFileFromS3(String bucketName, String objectKey) throws IOException;
+    byte[] readFile(String bucketName, String objectKey) throws IOException;
 
     void createDirectory(String bucketName, String directoryName);
 

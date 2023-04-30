@@ -1,12 +1,24 @@
 package com.example.ceph.util;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.SetBucketPolicyRequest;
+import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.CopyObjectResult;
+
+
+import java.util.List;
 
 @Component
 public class S3Util {
+
+    @Autowired
+    private S3Client s3Client;
 
 //    @Value("${s3.bucketName}")
     private String bucketName = "debugger";
@@ -18,7 +30,7 @@ public class S3Util {
 //    private int MAX_AGE_DAYS;
 
     public void setBucketQuota(/*String bucketName,*/ /*long quotaBytes*/) {
-        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+
 
 
         // TODO: 4/24/2023 change this
@@ -56,7 +68,7 @@ public class S3Util {
 //                }
 //                """, bucketName, quotaBytes);
 //
-        s3Client.setBucketPolicy(new SetBucketPolicyRequest(bucketName, policyJson));
+        s3Client.createBucket(CreateBucketRequest.builder().bucket("first").build());
     }
 
 //    public void autoRemoveObject(String DIR_PATH){
@@ -76,6 +88,8 @@ public class S3Util {
 //            }
 //        }, 0, 1, TimeUnit.HOURS);
 //    }
+
+
 
 }
 

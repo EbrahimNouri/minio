@@ -50,7 +50,7 @@ public class S3Controller {
     public ResponseEntity<byte[]> downloadFile(@RequestParam("bucketName") String bucketName,
                                                @PathVariable String objectKey) throws IOException {
 
-        byte[] data = s3Service.readFileFromS3(bucketName, objectKey);
+        byte[] data = s3Service.readFile(bucketName, objectKey);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);

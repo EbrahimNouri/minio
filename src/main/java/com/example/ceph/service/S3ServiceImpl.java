@@ -1,8 +1,13 @@
 package com.example.ceph.service;
 
+
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.util.IOUtils;
 import com.example.ceph.exception.FileSizeException;
 import com.example.ceph.util.S3Util;
 import org.slf4j.Logger;
@@ -10,11 +15,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -24,19 +34,17 @@ public class S3ServiceImpl implements S3Service {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-//    @Value("${s3.maxAge}")
+    //    @Value("${s3.maxAge}")
     private int MAX_AGE_DAYS;
 
+//    @Autowired
+//    private AmazonS3 amazonS3;
+
     @Autowired
-    private AmazonS3 amazonS3;
+    private S3Client s3Client;
 
     @Autowired
     private S3Util s3Util;
-
-    public S3ServiceImpl(AmazonS3 amazonS3, S3Util s3Util) {
-        this.amazonS3 = amazonS3;
-        this.s3Util = s3Util;
-    }
 
     @Override
     public void uploadFile(String bucketName, String objectKey, MultipartFile file) throws IOException {
@@ -53,19 +61,24 @@ public class S3ServiceImpl implements S3Service {
 
         if (file.getSize() <= sizeLimit) {
 
-            PutObjectRequest request = new PutObjectRequest(
-                    bucketName, objectKey, file.getInputStream(), new ObjectMetadata());
-
-            PutObjectResult putObjectResult = amazonS3.putObject(request);
 
             // for auto remove files
-            Date date = new Date();
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(date);
-            calendar.add(Calendar.DATE, MAX_AGE_DAYS);
-            date = calendar.getTime();
-            putObjectResult.setExpirationTime(date);
+//            Date date = new Date();
+//            Calendar calendar = Calendar.getInstance();
+//            calendar.setTime(date);
+//            calendar.add(Calendar.DATE, MAX_AGE_DAYS);
+//            date = calendar.getTime();
+//            metadata.setExpirationTime(date);
 
+            Instant instant = Instant.now().plus(7, ChronoUnit.DAYS);
+
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .expires(instant)
+                    .build();
+
+            PutObjectResponse response = s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
 
         } else {
 
@@ -75,78 +88,133 @@ public class S3ServiceImpl implements S3Service {
 
     }
 
-    @Override
-    public void deleteFile(String bucketName, String objectKey) {
-        logger.debug("deleting file");
-        amazonS3.deleteObject(bucketName, objectKey);
+    public void uploadFile(String bucketName, String objectKey, File file) {
+
+        // Create an S3Client objec
+
+        // Create a PutObjectRequest object
+        PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key(objectKey).build();
+
+        // Upload the file to S3
+        PutObjectResponse response = s3Client.putObject(request, RequestBody.fromFile(file));
+
+        // Print the result
+        logger.debug("File uploaded to S3 with ETag " + response.eTag());
     }
 
     @Override
-    public byte[] readFileFromS3(String bucketName, String objectKey) throws IOException {
+    public void deleteFile(String bucketName, String objectKey) {
+        logger.debug("deleting file");
+        s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(objectKey).build());
+    }
 
-        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+    @Override
+    public byte[] readFile(String bucketName, String objectKey) throws IOException {
 
-        S3Object s3Object = s3Client.getObject(bucketName, objectKey);
-        InputStream inputStream = s3Object.getObjectContent();
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, length);
-        }
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
 
-        byte[] data = outputStream.toByteArray();
-        outputStream.close();
-        inputStream.close();
-
-        logger.info("reading data from S3 bucket {}", bucketName);
-
-        return data;
+        return s3Client.getObject(getObjectRequest, ResponseTransformer.toBytes()).asByteArray();
     }
 
     @Override
     public void createDirectory(String bucketName, String directoryName) {
-        // Add a trailing slash to the directory name to indicate that it's a "directory"
-        String key = directoryName + "/";
 
-        // Create an empty object with the "directory" key
-        byte[] emptyContent = new byte[0];
-        InputStream emptyInputStream = new ByteArrayInputStream(emptyContent);
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(0);
-        PutObjectRequest request = new PutObjectRequest(bucketName, key, emptyInputStream, metadata);
+        directoryName =  directoryName + "/";
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(directoryName)
+                    .build();
 
-        // Upload the empty object to S3
-
-        logger.info("Uploading directory {}", directoryName);
-        amazonS3.putObject(request);
+        s3Client.putObject(request, RequestBody.fromBytes(new byte[0]));
     }
 
     @Override
-    public void deleteObjectsInDirectory(String bucketName, String directoryName) {
-        ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
-                .withBucketName(bucketName)
-                .withPrefix(directoryName + "/");
+    public void deleteObjectsInDirectory(String bucketName, String prefix) {
+        ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .prefix(prefix)
+                .build();
 
-        ListObjectsV2Result result;
+        ListObjectsV2Response listObjectsResponse;
         do {
-            result = amazonS3.listObjectsV2(listObjectsRequest);
-            List<S3ObjectSummary> objects = result.getObjectSummaries();
-            for (S3ObjectSummary os : objects) {
-                amazonS3.deleteObject(bucketName, os.getKey());
+            listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
+            for (S3Object s3Object : listObjectsResponse.contents()) {
+                s3Client.deleteObject(DeleteObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(s3Object.key())
+                        .build());
             }
-            String token = result.getNextContinuationToken();
-            listObjectsRequest.setContinuationToken(token);
-        } while (result.isTruncated());
 
-        logger.info("ListObjectsV2 Response from Amazon S3 bucket " + bucketName + " running");
+            listObjectsRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(prefix)
+                    .continuationToken(listObjectsResponse.nextContinuationToken())
+                    .build();
+        } while (listObjectsResponse.isTruncated());
+
+        s3Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(prefix)
+                .build());
     }
 
     @Override
     public void setBucketQuota(/*String bucketName, long quotaBytes*/) {
         s3Util.setBucketQuota(/*bucketName, quotaBytes*/);
         logger.info("limiting space storage");
+    }
+
+
+    // TODO: 4/30/2023 resolve that ↓
+    public void showS3BucketStorageUsage(S3Client s3Client, String bucketName) throws IOException {
+        ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .build();
+
+        ListObjectsV2Response result;
+
+        long totalSize = 0;
+        int totalObjects = 0;
+
+        do {
+            result = s3Client.listObjectsV2(listObjectsRequest);
+            List<S3Object> objects = result.contents();
+
+            for (S3Object object : objects) {
+                totalSize += object.size();
+                totalObjects++;
+            }
+
+            listObjectsRequest = listObjectsRequest.toBuilder()
+                    .continuationToken(result.nextContinuationToken())
+                    .build();
+        } while(result.isTruncated());
+
+        System.out.println("Total number of objects in bucket: " + totalObjects);
+        System.out.println("Total size of objects in bucket: " + totalSize + " bytes");
+
+        GetBucketLoggingRequest loggingConfigRequest = GetBucketLoggingRequest.builder()
+                .bucket(bucketName)
+                .build();
+
+        GetBucketLoggingResponse loggingConfigResponse = s3Client.getBucketLogging(loggingConfigRequest);
+
+        if (loggingConfigResponse.loggingEnabled().hasTargetGrants() && loggingConfigResponse.loggingEnabled().targetBucket() != null) {
+            String logBucket = loggingConfigResponse.loggingEnabled().targetBucket();
+            ResponseInputStream<GetObjectResponse> object = s3Client.getObject(GetObjectRequest.builder()
+                    .bucket(logBucket)
+                    .key(loggingConfigResponse.loggingEnabled().targetPrefix())
+                    .build());
+
+            InputStream inputStream = object;
+            long size = inputStream.available();
+//            byte[] bytes = IOUtils.toByteArray(inputStream);
+            logger.debug("Total size of access logs: " + size + " bytes");
+        }
     }
 
 }
