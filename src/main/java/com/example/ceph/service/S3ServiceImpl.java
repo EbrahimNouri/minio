@@ -1,15 +1,7 @@
 package com.example.ceph.service;
 
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.util.IOUtils;
 import com.example.ceph.exception.FileSizeException;
 import com.example.ceph.util.S3Util;
 import org.slf4j.Logger;
@@ -17,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -27,7 +18,6 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -125,11 +115,11 @@ public class S3ServiceImpl implements S3Service {
     @Override
     public void createDirectory(String bucketName, String directoryName) {
 
-        directoryName =  directoryName + "/";
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(directoryName)
-                    .build();
+        directoryName = directoryName + "/";
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(directoryName)
+                .build();
 
         s3Client.putObject(request, RequestBody.fromBytes(new byte[0]));
     }
@@ -172,6 +162,7 @@ public class S3ServiceImpl implements S3Service {
 
 
     // TODO: 4/30/2023 resolve that ↓
+    @Override
     public void showS3BucketStorageUsage(S3Client s3Client, String bucketName) throws IOException {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
@@ -194,7 +185,7 @@ public class S3ServiceImpl implements S3Service {
             listObjectsRequest = listObjectsRequest.toBuilder()
                     .continuationToken(result.nextContinuationToken())
                     .build();
-        } while(result.isTruncated());
+        } while (result.isTruncated());
 
         logger.debug("Total number of objects in bucket: " + totalObjects);
         logger.debug("Total size of objects in bucket: " + totalSize + " bytes");
@@ -220,6 +211,8 @@ public class S3ServiceImpl implements S3Service {
     }
 
     // TODO: 4/30/2023 must be checked
+
+    @Override
     public void backupDirectory(S3Client s3Client, String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException {
         ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder()
                 .bucket(bucketName)
@@ -249,6 +242,61 @@ public class S3ServiceImpl implements S3Service {
                 directory.mkdirs();
             }
         }
+    }
+
+    @Override
+    public long getFolderSize(String bucketName, String folderKey) {
+        long size = 0;
+
+        ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .prefix(folderKey + "/")
+                .build();
+
+        ListObjectsV2Response listObjectsResponse;
+        do {
+            listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
+
+            for (S3Object object : listObjectsResponse.contents()) {
+                size += object.size();
+            }
+
+            listObjectsRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(folderKey + "/")
+                    .continuationToken(listObjectsResponse.nextContinuationToken())
+                    .build();
+        } while (listObjectsResponse.isTruncated());
+
+        return size;
+    }
+
+    @Override
+    public Date getFolderCreationDate(S3Client s3Client, String bucketName, String folderKey) {
+        ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .prefix(folderKey + "/")
+                .build();
+
+        ListObjectsV2Response listObjectsResponse;
+        do {
+            listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
+
+            for (S3Object objectSummary : listObjectsResponse.contents()) {
+                if (objectSummary.key().equals(folderKey + "/")) {
+
+                    return Date.from(objectSummary.lastModified());
+                }
+            }
+
+            listObjectsRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(folderKey + "/")
+                    .continuationToken(listObjectsResponse.nextContinuationToken())
+                    .build();
+        } while (listObjectsResponse.isTruncated());
+
+        return null;
     }
 
 

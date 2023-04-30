@@ -60,6 +60,9 @@ dependencies {
 
     implementation 'software.amazon.awssdk:s3:2.20.56'
 
+    testImplementation 'junit:junit:4.13.2'
+
+
 
 
 }
