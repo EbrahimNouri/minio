@@ -21,11 +21,15 @@ public interface S3Service {
     void setBucketQuota(/*String bucketName, long quotaBytes*/);
 
     // TODO: 4/30/2023 resolve that ↓
-    void showS3BucketStorageUsage(S3Client s3Client, String bucketName) throws IOException;
+    void showS3BucketStorageUsage(String bucketName) throws IOException;
 
-    void backupDirectory(S3Client s3Client, String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException;
+    void backupDirectory(String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException;
 
     long getFolderSize(String bucketName, String folderKey);
 
-    Date getFolderCreationDate(S3Client s3Client, String bucketName, String folderKey);
+    Date getFolderCreationDate(String bucketName, String folderKey);
+
+    void saveTicket(String bucketName, String ticketId, String ticketContent);
+
+    void replyToTicket(String bucketName, String ticketId, String replyMessage);
 }

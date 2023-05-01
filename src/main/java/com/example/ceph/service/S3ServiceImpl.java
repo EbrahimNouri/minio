@@ -16,10 +16,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class S3ServiceImpl implements S3Service {
@@ -163,7 +163,7 @@ public class S3ServiceImpl implements S3Service {
 
     // TODO: 4/30/2023 resolve that ↓
     @Override
-    public void showS3BucketStorageUsage(S3Client s3Client, String bucketName) throws IOException {
+    public void showS3BucketStorageUsage(String bucketName) throws IOException {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
                 .build();
@@ -213,7 +213,7 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 4/30/2023 must be checked
 
     @Override
-    public void backupDirectory(S3Client s3Client, String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException {
+    public void backupDirectory(String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException {
         ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder()
                 .bucket(bucketName)
                 .prefix(sourceKeyPrefix)
@@ -272,7 +272,7 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public Date getFolderCreationDate(S3Client s3Client, String bucketName, String folderKey) {
+    public Date getFolderCreationDate(String bucketName, String folderKey) {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
                 .prefix(folderKey + "/")
@@ -299,5 +299,51 @@ public class S3ServiceImpl implements S3Service {
         return null;
     }
 
+    @Override
+    public void saveTicket(String bucketName, String ticketId, String ticketContent) {
+        InputStream inputStream = new ByteArrayInputStream(ticketContent.getBytes());
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("ticketId", ticketId);
 
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(ticketId)
+                .acl(ObjectCannedACL.PRIVATE)
+                .metadata(metadata)
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromInputStream(inputStream, ticketContent.getBytes().length));
+        logger.info("Ticket " + ticketId + " uploaded to bucket " + bucketName);
+    }
+
+    @Override
+    public void replyToTicket(String bucketName, String ticketId, String replyMessage) {
+        // Create a new object in the bucket with the reply message as its content
+        byte[] contentBytes = replyMessage.getBytes(StandardCharsets.UTF_8);
+
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("ticketId", ticketId);
+
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(ticketId + "/reply.txt")
+                .metadata(metadata)
+                .build();
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(replyMessage.getBytes()));
+
+        // Update the ticket status to "replied"
+        Map<String, String> metadataMap = new HashMap<>();
+        metadataMap.put("status", "replied");
+        metadataMap.put("lastUpdated", String.valueOf(System.currentTimeMillis()));
+        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+                .copySource(bucketName + "/" + ticketId + "/")
+                .destinationBucket(bucketName)
+                .destinationKey(ticketId + "/")
+                .metadata(metadataMap)
+                .metadataDirective(MetadataDirective.REPLACE)
+                .build();
+
+        s3Client.copyObject(copyObjectRequest);
+    }
 }

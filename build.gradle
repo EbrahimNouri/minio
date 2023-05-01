@@ -1,72 +1,105 @@
+//plugins {
+//    id 'java'
+//    id 'org.springframework.boot' version '3.0.5'
+//    id 'io.spring.dependency-management' version '1.1.0'
+//}
+//
+//group = 'com.example'
+//version = '0.0.1-SNAPSHOT'
+//sourceCompatibility = '17'
+//
+//repositories {
+//    mavenCentral()
+//    maven {
+//        url "https://repo.spring.io/release"
+//    }
+//    maven {
+//        url "https://repository.jboss.org/maven2"
+//    }
+//    google()
+//
+//}
+//
+//dependencies {
+//    implementation 'org.springframework.boot:spring-boot-starter'
+//    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+//
+//
+//
+//// https://mvnrepository.com/artifact/com.ceph/rados
+//    implementation group: 'com.ceph', name: 'rados', version: '0.5.0'
+//
+//    // https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-aws
+//    implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-aws', version: '1.0.1.RELEASE'
+//
+//    // https://mvnrepository.com/artifact/org.springframework/spring-web
+//    implementation group: 'org.springframework', name: 'spring-web', version: '4.3.11.RELEASE'
+//
+//        // https://mvnrepository.com/artifact/software.amazon.awssdk/s3
+////    testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.47'
+//
+//        // https://mvnrepository.com/artifact/com.github.vladimir-bukhtoyarov/bucket4j-core
+////    implementation group: 'com.github.vladimir-bukhtoyarov', name: 'bucket4j-core', version: '6.2.0'
+//
+////    implementation 'com.amazonaws:aws-java-sdk-s3:2.12.67'
+////
+////    implementation 'software.amazon.awssdk:s3:2.20.26'
+////
+////    implementation group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.12.459'
+////
+////// https://mvnrepository.com/artifact/software.amazon.awssdk/netty-nio-client
+////    testImplementation group: 'software.amazon.awssdk', name: 'netty-nio-client', version: '2.20.51'
+//
+//        // https://mvnrepository.com/artifact/org.projectlombok/lombok
+//        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'
+//
+//
+//// https://mvnrepository.com/artifact/software.amazon.awssdk/s3
+//    testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.56'
+//
+//
+//    implementation 'software.amazon.awssdk:s3:2.20.56'
+//
+//    testImplementation 'junit:junit:4.13.2'
+//
+//
+//
+//
+//}
+//
+//    tasks.named('test') {
+//        useJUnitPlatform()
+//    }
+
+
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.0.5'
-    id 'io.spring.dependency-management' version '1.1.0'
+    id 'org.springframework.boot' version '2.7.11'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+sourceCompatibility = '11'
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://repo.spring.io/release"
-    }
-    maven {
-        url "https://repository.jboss.org/maven2"
-    }
-    google()
-
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-
-
-// https://mvnrepository.com/artifact/com.ceph/rados
     implementation group: 'com.ceph', name: 'rados', version: '0.5.0'
-
-    // https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-aws
     implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-aws', version: '1.0.1.RELEASE'
-
-    // https://mvnrepository.com/artifact/org.springframework/spring-web
     implementation group: 'org.springframework', name: 'spring-web', version: '4.3.11.RELEASE'
-
-        // https://mvnrepository.com/artifact/software.amazon.awssdk/s3
-//    testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.47'
-
-        // https://mvnrepository.com/artifact/com.github.vladimir-bukhtoyarov/bucket4j-core
-//    implementation group: 'com.github.vladimir-bukhtoyarov', name: 'bucket4j-core', version: '6.2.0'
-
-//    implementation 'com.amazonaws:aws-java-sdk-s3:2.12.67'
-//
-//    implementation 'software.amazon.awssdk:s3:2.20.26'
-//
-//    implementation group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.12.459'
-//
-//// https://mvnrepository.com/artifact/software.amazon.awssdk/netty-nio-client
-//    testImplementation group: 'software.amazon.awssdk', name: 'netty-nio-client', version: '2.20.51'
-
-        // https://mvnrepository.com/artifact/org.projectlombok/lombok
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'
-
-
-// https://mvnrepository.com/artifact/software.amazon.awssdk/s3
-    testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.56'
-
-
-    implementation 'software.amazon.awssdk:s3:2.20.56'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'
 
     testImplementation 'junit:junit:4.13.2'
-
-
-
-
+    testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.56'
+    implementation 'software.amazon.awssdk:s3:2.20.56'
 }
 
-    tasks.named('test') {
-        useJUnitPlatform()
-    }
+tasks.named('test') {
+    useJUnitPlatform()
+}
