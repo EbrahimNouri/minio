@@ -1,12 +1,13 @@
 package com.example.ceph.service;
 
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.ceph.exception.DeleteTicketException;
-import com.example.ceph.exception.FileSizeException;
 import com.example.ceph.exception.TicketClosedException;
 import com.example.ceph.util.S3Util;
+import com.example.ceph.util.ZipUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,18 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Service
 public class S3ServiceImpl implements S3Service {
@@ -40,8 +48,12 @@ public class S3ServiceImpl implements S3Service {
     private S3Client s3Client;
 
     @Autowired
+    private ZipUtil zipUtil;
+
+    @Autowired
     private S3Util s3Util;
 
+    // TODO: 5/1/2023 1)
     @Override
     public void uploadFile(String bucketName, String objectKey, MultipartFile file) throws IOException {
 
@@ -50,12 +62,12 @@ public class S3ServiceImpl implements S3Service {
         ObjectMetadata metadata = new ObjectMetadata();
 
         // TODO: 4/19/2023 for limit in size of upload
-        long sizeLimit = 10485760; // 10 MB in bytes
+//        long sizeLimit = 10485760; // 10 MB in bytes
 
         metadata.setContentLength(file.getSize());
         metadata.setContentType(file.getContentType());
 
-        if (file.getSize() <= sizeLimit) {
+//        if (file.getSize() <= sizeLimit) {
 
 
             // for auto remove files
@@ -76,15 +88,15 @@ public class S3ServiceImpl implements S3Service {
 
             PutObjectResponse response = s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
 
-        } else {
-
-            logger.info("Uploading file failed");
-            throw new FileSizeException("size file more than" + sizeLimit / 1_048_576 + " megabytes");
-        }
+//        } else {
+//
+//            logger.info("Uploading file failed");
+//            throw new FileSizeException("size file more than" + sizeLimit / 1_048_576 + " megabytes");
+//        }
 
     }
 
-    public void uploadFile(String bucketName, String objectKey, File file) {
+    public void simpleUploadFile(String bucketName, String objectKey, File file) {
 
         // Create an S3Client object
 
@@ -98,12 +110,14 @@ public class S3ServiceImpl implements S3Service {
         logger.debug("File uploaded to S3 with ETag " + response.eTag());
     }
 
+    // TODO: 5/1/2023 3)
     @Override
     public void deleteFile(String bucketName, String objectKey) {
         logger.debug("deleting file");
         s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(objectKey).build());
     }
 
+    // TODO: 5/1/2023 2)
     @Override
     public byte[] readFile(String bucketName, String objectKey) {
 
@@ -123,6 +137,7 @@ public class S3ServiceImpl implements S3Service {
             throw new DeleteTicketException(objectKey);
     }
 
+    // TODO: 5/1/2023 7)
     @Override
     public void createDirectory(String bucketName, String directoryName) {
 
@@ -135,6 +150,7 @@ public class S3ServiceImpl implements S3Service {
         s3Client.putObject(request, RequestBody.fromBytes(new byte[0]));
     }
 
+    // TODO: 5/1/2023 10)
     @Override
     public void deleteObjectsInDirectory(String bucketName, String prefix) {
 
@@ -168,6 +184,7 @@ public class S3ServiceImpl implements S3Service {
                 .build());
     }
 
+    // TODO: 5/1/2023 14)
     @Override
     public void setBucketQuota(/*String bucketName, long quotaBytes*/) {
         s3Util.setBucketQuota(/*bucketName, quotaBytes*/);
@@ -175,9 +192,9 @@ public class S3ServiceImpl implements S3Service {
     }
 
 
-    // TODO: 4/30/2023 resolve that ↓
+    // TODO: 4/30/2023 resolve that ↓ 15)
     @Override
-    public void showS3BucketStorageUsage(String bucketName) throws IOException {
+    public void showBucketStorageUsage(String bucketName) throws IOException {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
                 .build();
@@ -224,8 +241,7 @@ public class S3ServiceImpl implements S3Service {
         }
     }
 
-    // TODO: 4/30/2023 must be checked
-
+    // TODO: 4/30/2023 must be checked 11) 4)
     @Override
     public void backupDirectory(String bucketName, String sourceKeyPrefix, String destinationPath) throws IOException {
 
@@ -259,6 +275,141 @@ public class S3ServiceImpl implements S3Service {
         }
     }
 
+    // TODO: 5/2/2023 5)
+    @Override
+    public Long getFileSize(String bucketName, String objectKey) {
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+        HeadObjectResponse metadata = s3Client.headObject(headObjectRequest);
+        return metadata.contentLength();
+
+    }
+
+    // TODO: 5/2/2023 6)
+    @Override
+    public Map<String, String> getFileFormatAndUploadTime(String bucketName, String objectKey) {
+        Map<String, String> map;
+        Map<String, String> returnMap = new HashMap<>();
+
+        HeadObjectRequest objectRequest = HeadObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+        try {
+            HeadObjectRequest headObjectRequest = HeadObjectRequest
+                    .builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .build();
+
+            HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
+
+            map = headObjectResponse.metadata();
+            String fileFormat = map.get("Content-Type");
+            String uploadTime = map.get("Last-Modified");
+            returnMap.put("File format: ", fileFormat);
+            returnMap.put("Upload time: ", uploadTime);
+            return returnMap;
+        } catch (AmazonServiceException e) {
+            // handle exception
+        }
+        return new HashMap<>();
+    }
+
+    // TODO: 5/2/2023 8)
+    @Override
+    public void uploadZip(String bucketName, String key, File file) {
+
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(file.length());
+        metadata.setContentType("application/zip");
+
+        // Upload the file to S3
+        simpleUploadFile(bucketName,key, file);
+
+        // Extract the files and directories from the zip file and upload them to S3
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(file))) {
+            ZipEntry entry = zis.getNextEntry();
+            while (entry != null) {
+                String entryName = entry.getName();
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(entryName)
+                        .metadata(new ObjectMetadata().getUserMetadata())
+                        .build();
+
+                if (!entry.isDirectory()) {
+                    // Upload file to S3
+                    s3Client.putObject(putObjectRequest, RequestBody.fromBytes(entry.getExtra()));
+
+                } else {
+                    // Create directory in S3
+                    s3Client.putObject(putObjectRequest,/* entryName + "/", new byte[0], new ObjectMetadata().getUserMetadata()*/
+                    RequestBody.fromBytes(new byte[0]));
+
+                }
+                zis.closeEntry();
+                entry = zis.getNextEntry();
+            }
+        } catch (AmazonServiceException e) {
+            logger.error(e.getErrorMessage());
+            System.exit(1);
+        } catch (AmazonClientException | IOException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    // TODO: 5/2/2023 9)
+    @Override
+    public File downloadDirectoryAsZip(String bucketName, String directoryKey) throws IOException {
+        // Create a new temporary directory to store the downloaded files
+        Path tempDir = Files.createTempDirectory("downloaded-files");
+
+        // Create a new ZIP file to store the downloaded directory
+        File zipFile = File.createTempFile("downloaded-directory", ".zip");
+
+        // List all objects in the specified directory
+        ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .prefix(directoryKey)
+                .build();
+        ListObjectsV2Response listObjectsResponse;
+        do {
+            listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
+            for (S3Object object : listObjectsResponse.contents()) {
+
+                // Get the object key and file name
+                String objectKey = object.key();
+                String fileName = objectKey.substring(directoryKey.length() + 1); // Remove the directory prefix
+
+                // Download the object to the temporary directory
+                Path filePath = Paths.get(tempDir.toString(), fileName);
+                s3Client.getObject(GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(objectKey)
+                        .build(), ResponseTransformer.toFile(filePath));
+            }
+            listObjectsRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(directoryKey)
+                    .continuationToken(listObjectsResponse.nextContinuationToken())
+                    .build();
+        } while (listObjectsResponse.isTruncated());
+
+        // Zip the downloaded directory and its contents
+        ZipUtil.zipDirectory(tempDir.toFile().toPath(), zipFile.toPath());
+
+        // Delete the temporary directory and its contents
+        FileUtils.deleteDirectory(tempDir.toFile());
+
+        // Return the ZIP file
+        return zipFile;
+    }
+
+    // TODO: 5/1/2023 12)
     @Override
     public long getFolderSize(String bucketName, String folderKey) {
         long size = 0;
@@ -286,6 +437,7 @@ public class S3ServiceImpl implements S3Service {
         return size;
     }
 
+    // TODO: 5/1/2023 13)
     @Override
     public Date getFolderCreationDate(String bucketName, String folderKey) {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
@@ -393,6 +545,7 @@ public class S3ServiceImpl implements S3Service {
     }
 
 
+    @Override
     public void closeTicket(String bucketName, String ticketId) {
 
         try {
