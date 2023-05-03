@@ -1,21 +1,21 @@
 package com.example.ceph.util;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.CopyObjectResult;
+import software.amazon.awssdk.services.s3.model.*;
 
 
+import java.io.File;
 import java.util.List;
 
 @Component
 public class S3Util {
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private S3Client s3Client;
@@ -88,6 +88,20 @@ public class S3Util {
 //        }, 0, 1, TimeUnit.HOURS);
 //    }
 
+
+    public void simpleUploadFile(String bucketName, String objectKey, File file) {
+
+        // Create an S3Client object
+
+        // Create a PutObjectRequest object
+        PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key(objectKey).build();
+
+        // Upload the file to S3
+        PutObjectResponse response = s3Client.putObject(request, RequestBody.fromFile(file));
+
+        // Print the result
+        logger.debug("File uploaded to S3 with ETag " + response.eTag());
+    }
 
 }
 

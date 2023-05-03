@@ -1,18 +1,18 @@
 package com.example.ceph.config;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.Bucket;
+import ch.qos.logback.classic.pattern.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.aws.context.config.annotation.EnableContextInstanceData;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -20,20 +20,20 @@ import java.net.URI;
 
 
 @Configuration
-@EnableContextInstanceData
+//@EnableContextInstanceData
 public class S3Config {
 
-    @Value("${aws.access.key}")
-    private String awsAccessKey;
+    @Value("${aws.accessKeyId}")
+    private String accessKeyId;
 
-    @Value("${aws.secret.key}")
-    private String awsSecretKey;
+    @Value("${aws.secretAccessKey}")
+    private String secretAccessKey;
 
-    @Value("${s3.endpoint.url}")
-    private String s3EndpointUrl;
+    @Value("${aws.region}")
+    private String region;
 
-    @Value("${s3.region}")
-    private String s3Region;
+    @Value("${s3.bucketName}")
+    private String bucketName;
 
 //    @Value("{$s3.bucketName}")
 //    private String bucketName;
@@ -68,21 +68,24 @@ public class S3Config {
 //    }
 
     @Bean
-    @Primary
-    public S3Client s3Client() {
+//    @Primary
+    public S3Client  s3Client() {
 
 
         AwsCredentials credentials = AwsBasicCredentials.create("access_key", "secret_key");
 
         return S3Client.builder()
-                .credentialsProvider(() -> credentials)
+//                .credentialsProvider(() -> credentials)
                 .region(Region.AWS_ISO_GLOBAL)
-                .endpointOverride(URI.create(s3EndpointUrl))
-                .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(true)
-                        .build())
+//                .endpointOverride(URI.create(s3EndpointUrl))
+                .defaultsMode(DefaultsMode.AUTO)
+//                .serviceConfiguration(S3Configuration.builder()
+//                        .pathStyleAccessEnabled(true)
+//                        .build())
                 .build();
     }
+
+
 
 //    @Bean
 //    @Primary
@@ -101,21 +104,28 @@ public class S3Config {
 //                .build();
 //    }
 
+//    @Bean
+//    public Bucket bucket() {
+//
+//        try (S3Client s3Client1 = S3Client.builder()
+//                .region(Region.AWS_ISO_GLOBAL)
+//                .defaultsMode(DefaultsMode.AUTO)
+//                .credentialsProvider(DefaultCredentialsProvider.create())
+//                .build()) {
+//
+//            s3Client1.createBucket(CreateBucketRequest.builder().bucket("bucket").build());
+//
+//            // perform S3 operations using s3Client
+//        } catch (S3Exception e) {
+//            // handle S3 exception
+//        }
+//
+//        return null;
+//    }
+
     @Bean
-    public Bucket createBucket() {
-
-        try (S3Client s3Client1 = S3Client.builder()
-                .region(Region.US_EAST_1)
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .build()) {
-
-            s3Client1.createBucket(CreateBucketRequest.builder().bucket("bucket").build());
-
-            // perform S3 operations using s3Client
-        } catch (S3Exception e) {
-            // handle S3 exception
-        }
-
-        return null;
+    public String bucketName() {
+        return bucketName;
     }
+
 }

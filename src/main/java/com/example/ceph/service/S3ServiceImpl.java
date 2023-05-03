@@ -1,11 +1,7 @@
 package com.example.ceph.service;
 
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.ceph.exception.DeleteTicketException;
-import com.example.ceph.exception.TicketClosedException;
 import com.example.ceph.util.S3Util;
 import com.example.ceph.util.ZipUtil;
 import org.slf4j.Logger;
@@ -14,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -23,7 +18,6 @@ import software.amazon.awssdk.services.s3.model.*;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,19 +47,26 @@ public class S3ServiceImpl implements S3Service {
     @Autowired
     private S3Util s3Util;
 
+    @Override
+    public void createBucket(String bucket){
+        s3Client.createBucket(CreateBucketRequest.builder()
+                .bucket(bucket)
+                .build());
+    }
+
     // TODO: 5/1/2023 1)
     @Override
     public void uploadFile(String bucketName, String objectKey, MultipartFile file) throws IOException {
 
         logger.info("Uploading file");
 
-        ObjectMetadata metadata = new ObjectMetadata();
-
-        // TODO: 4/19/2023 for limit in size of upload
-//        long sizeLimit = 10485760; // 10 MB in bytes
-
-        metadata.setContentLength(file.getSize());
-        metadata.setContentType(file.getContentType());
+//        ObjectMetadata metadata = new ObjectMetadata();
+//
+//        // TODO: 4/19/2023 for limit in size of upload
+////        long sizeLimit = 10485760; // 10 MB in bytes
+//
+//        metadata.setContentLength(file.getSize());
+//        metadata.setContentType(file.getContentType());
 
 //        if (file.getSize() <= sizeLimit) {
 
@@ -96,19 +97,6 @@ public class S3ServiceImpl implements S3Service {
 
     }
 
-    public void simpleUploadFile(String bucketName, String objectKey, File file) {
-
-        // Create an S3Client object
-
-        // Create a PutObjectRequest object
-        PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key(objectKey).build();
-
-        // Upload the file to S3
-        PutObjectResponse response = s3Client.putObject(request, RequestBody.fromFile(file));
-
-        // Print the result
-        logger.debug("File uploaded to S3 with ETag " + response.eTag());
-    }
 
     // TODO: 5/1/2023 3)
     @Override
@@ -312,8 +300,8 @@ public class S3ServiceImpl implements S3Service {
             returnMap.put("File format: ", fileFormat);
             returnMap.put("Upload time: ", uploadTime);
             return returnMap;
-        } catch (AmazonServiceException e) {
-            // handle exception
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
         return new HashMap<>();
     }
@@ -323,12 +311,12 @@ public class S3ServiceImpl implements S3Service {
     public void uploadZip(String bucketName, String key, File file) {
 
 
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(file.length());
-        metadata.setContentType("application/zip");
+//        ObjectMetadata metadata = new ObjectMetadata();
+//        metadata.setContentLength(file.length());
+//        metadata.setContentType("application/zip");
 
         // Upload the file to S3
-        simpleUploadFile(bucketName,key, file);
+        s3Util.simpleUploadFile(bucketName,key, file);
 
         // Extract the files and directories from the zip file and upload them to S3
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(file))) {
@@ -338,7 +326,7 @@ public class S3ServiceImpl implements S3Service {
                 PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                         .bucket(bucketName)
                         .key(entryName)
-                        .metadata(new ObjectMetadata().getUserMetadata())
+                        .metadata(new HashMap<>())
                         .build();
 
                 if (!entry.isDirectory()) {
@@ -354,10 +342,8 @@ public class S3ServiceImpl implements S3Service {
                 zis.closeEntry();
                 entry = zis.getNextEntry();
             }
-        } catch (AmazonServiceException e) {
-            logger.error(e.getErrorMessage());
-            System.exit(1);
-        } catch (AmazonClientException | IOException e) {
+
+        } catch (IOException e) {
             logger.error(e.getMessage());
         }
     }
@@ -466,139 +452,157 @@ public class S3ServiceImpl implements S3Service {
         return null;
     }
 
-    @Override
-    public void saveTicket(String bucketName, String ticketId, String ticketContent) {
+//    @Override
+//    public void saveTicket(String bucketName, String ticketId, String ticketContent) {
+//
+//        InputStream inputStream = new ByteArrayInputStream(ticketContent.getBytes());
+//        Map<String, String> metadata = new HashMap<>();
+//        metadata.put("isTicketClosed", "false");
+//        metadata.put("ticketId", ticketId);
+//
+//        PutObjectRequest request = PutObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(ticketId)
+//                .acl(ObjectCannedACL.PRIVATE)
+//                .metadata(metadata)
+//                .build();
+//
+//        s3Client.putObject(request, RequestBody.fromInputStream(inputStream, ticketContent.getBytes().length));
+//        logger.info("Ticket " + ticketId + " uploaded to bucket " + bucketName);
+//    }
 
-        InputStream inputStream = new ByteArrayInputStream(ticketContent.getBytes());
+//    @Override
+//    public void replyToTicket(String bucketName, String ticketId, String replyMessage) {
+//        // Create a new object in the bucket with the reply message as its content
+//        byte[] contentBytes = replyMessage.getBytes(StandardCharsets.UTF_8);
+//
+//        Map<String, String> metadata = new HashMap<>();
+//        metadata.put("ticketId", ticketId);
+//
+//
+//        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(ticketId + "/reply.txt")
+//                .metadata(metadata)
+//                .build();
+//        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(replyMessage.getBytes()));
+//
+//        // Update the ticket status to "replied"
+//        Map<String, String> metadataMap = new HashMap<>();
+//        metadataMap.put("status", "replied");
+//        metadataMap.put("lastUpdated", String.valueOf(System.currentTimeMillis()));
+//        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+//                .copySource(bucketName + "/" + ticketId + "/")
+//                .destinationBucket(bucketName)
+//                .destinationKey(ticketId + "/")
+//                .metadata(metadataMap)
+//                .metadataDirective(MetadataDirective.REPLACE)
+//                .build();
+//
+//        s3Client.copyObject(copyObjectRequest);
+//    }
+
+//    public void replyToTicket(String bucketName, String ticketId, String replyMessage, boolean isTicketClosed) {
+//        try {
+//
+//            // Get the metadata of the ticket file
+//            Map<String, String> metadata = getMetadata(bucketName, ticketId);
+//
+//
+//            // Upload the reply message to S3
+//            String replyKey = ticketId + "/" + UUID.randomUUID();
+//            InputStream inputStream = new ByteArrayInputStream(replyMessage.getBytes(StandardCharsets.UTF_8));
+//            ObjectMetadata replyMetadata = new ObjectMetadata();
+//            replyMetadata.setContentLength(replyMessage.getBytes(StandardCharsets.UTF_8).length);
+//            replyMetadata.setContentType("text/plain");
+//            replyMetadata.setUserMetadata(Collections.singletonMap("isTicketClosed", Boolean.toString(isTicketClosed)));
+//            s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(replyKey).metadata(replyMetadata.getUserMetadata()).build(), RequestBody.fromInputStream(inputStream, replyMessage.getBytes(StandardCharsets.UTF_8).length));
+//
+//            // Set the new metadata for the ticket file
+//            changeMetadata(bucketName, ticketId, metadata, isTicketClosed);
+//
+//        } catch (SdkClientException e) {
+//            // Handle SDK client exceptions
+//            e.printStackTrace();
+//        }
+//    }
+
+
+//    @Override
+//    public void closeTicket(String bucketName, String ticketId) {
+//
+//        try {
+//
+//            // Get the metadata of the ticket file
+//            Map<String, String> metadata = getMetadata(bucketName, ticketId);
+//
+//            // Set the new metadata for the ticket file
+//            changeMetadata(bucketName, ticketId, metadata, true);
+//
+//            logger.info("Closing the ticket file " + bucketName + " with metadata " + metadata);
+//
+//        } catch (AmazonServiceException e) {
+//            // Handle Amazon service exceptions
+//            logger.error(e.getMessage());
+//
+//        } catch (SdkClientException e) {
+//            // Handle SDK client exceptions
+//            logger.error(e.getMessage());
+//        }
+//    }
+
+//    private Map<String, String> getMetadata(String bucketName, String ticketId) {
+//        HeadObjectRequest request = HeadObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(ticketId)
+//                .build();
+//        HeadObjectResponse response = s3Client.headObject(request);
+//        Map<String, String> metadata = response.metadata();
+//
+//        logger.info(getMetadata(bucketName, ticketId).toString());
+//
+//        // Check if the ticket is closed
+//        if (metadata.containsKey("isTicketClosed") && Boolean.parseBoolean(metadata.get("isTicketClosed")))
+//            throw new TicketClosedException("Cannot reply to a closed ticket.");
+//        return metadata;
+//    }
+
+//    private void changeMetadata(String bucketName, String ticketId, Map<String, String> metadata, boolean isTicketClosed) {
+//        metadata.put("isTicketClosed", Boolean.toString(isTicketClosed));
+//        ObjectMetadata newMetadata = new ObjectMetadata();
+//        newMetadata.setContentLength(0L);
+//        newMetadata.setUserMetadata(metadata);
+//
+//        /* Copy the ticket file to itself with the new metadata */
+//        CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+//                .copySource(bucketName + "/" + ticketId)
+//                .destinationBucket(bucketName)
+//                .destinationKey(ticketId)
+//                .metadataDirective(MetadataDirective.REPLACE)
+//                .metadata(newMetadata.getUserMetadata())
+//                .build();
+//        s3Client.copyObject(copyRequest);
+//    }
+
+    public void uploadFile(
+            final String bucketName,
+            final String keyName,
+            final Long contentLength,
+            final String contentType,
+            final InputStream value
+    ) throws IOException {
         Map<String, String> metadata = new HashMap<>();
-        metadata.put("isTicketClosed", "false");
-        metadata.put("ticketId", ticketId);
-
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(ticketId)
-                .acl(ObjectCannedACL.PRIVATE)
-                .metadata(metadata)
-                .build();
-
-        s3Client.putObject(request, RequestBody.fromInputStream(inputStream, ticketContent.getBytes().length));
-        logger.info("Ticket " + ticketId + " uploaded to bucket " + bucketName);
-    }
-
-    @Override
-    public void replyToTicket(String bucketName, String ticketId, String replyMessage) {
-        // Create a new object in the bucket with the reply message as its content
-        byte[] contentBytes = replyMessage.getBytes(StandardCharsets.UTF_8);
-
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("ticketId", ticketId);
-
+        metadata.put("ContentLength", String.valueOf(contentLength));
+        metadata.put("ContentType", contentType);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key(ticketId + "/reply.txt")
+                .key(keyName)
                 .metadata(metadata)
                 .build();
-        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(replyMessage.getBytes()));
 
-        // Update the ticket status to "replied"
-        Map<String, String> metadataMap = new HashMap<>();
-        metadataMap.put("status", "replied");
-        metadataMap.put("lastUpdated", String.valueOf(System.currentTimeMillis()));
-        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
-                .copySource(bucketName + "/" + ticketId + "/")
-                .destinationBucket(bucketName)
-                .destinationKey(ticketId + "/")
-                .metadata(metadataMap)
-                .metadataDirective(MetadataDirective.REPLACE)
-                .build();
-
-        s3Client.copyObject(copyObjectRequest);
-    }
-
-    public void replyToTicket(String bucketName, String ticketId, String replyMessage, boolean isTicketClosed) {
-        try {
-
-            // Get the metadata of the ticket file
-            Map<String, String> metadata = getMetadata(bucketName, ticketId);
-
-
-            // Upload the reply message to S3
-            String replyKey = ticketId + "/" + UUID.randomUUID();
-            InputStream inputStream = new ByteArrayInputStream(replyMessage.getBytes(StandardCharsets.UTF_8));
-            ObjectMetadata replyMetadata = new ObjectMetadata();
-            replyMetadata.setContentLength(replyMessage.getBytes(StandardCharsets.UTF_8).length);
-            replyMetadata.setContentType("text/plain");
-            replyMetadata.setUserMetadata(Collections.singletonMap("isTicketClosed", Boolean.toString(isTicketClosed)));
-            s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(replyKey).metadata(replyMetadata.getUserMetadata()).build(), RequestBody.fromInputStream(inputStream, replyMessage.getBytes(StandardCharsets.UTF_8).length));
-
-            // Set the new metadata for the ticket file
-            changeMetadata(bucketName, ticketId, metadata, isTicketClosed);
-
-        } catch (AmazonServiceException e) {
-            // Handle Amazon service exceptions
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            // Handle SDK client exceptions
-            e.printStackTrace();
-        }
-    }
-
-
-    @Override
-    public void closeTicket(String bucketName, String ticketId) {
-
-        try {
-
-            // Get the metadata of the ticket file
-            Map<String, String> metadata = getMetadata(bucketName, ticketId);
-
-            // Set the new metadata for the ticket file
-            changeMetadata(bucketName, ticketId, metadata, true);
-
-            logger.info("Closing the ticket file " + bucketName + " with metadata " + metadata);
-
-        } catch (AmazonServiceException e) {
-            // Handle Amazon service exceptions
-            logger.error(e.getMessage());
-
-        } catch (SdkClientException e) {
-            // Handle SDK client exceptions
-            logger.error(e.getMessage());
-        }
-    }
-
-    private Map<String, String> getMetadata(String bucketName, String ticketId) {
-        HeadObjectRequest request = HeadObjectRequest.builder()
-                .bucket(bucketName)
-                .key(ticketId)
-                .build();
-        HeadObjectResponse response = s3Client.headObject(request);
-        Map<String, String> metadata = response.metadata();
-
-        logger.info(getMetadata(bucketName, ticketId).toString());
-
-        // Check if the ticket is closed
-        if (metadata.containsKey("isTicketClosed") && Boolean.parseBoolean(metadata.get("isTicketClosed")))
-            throw new TicketClosedException("Cannot reply to a closed ticket.");
-        return metadata;
-    }
-
-    private void changeMetadata(String bucketName, String ticketId, Map<String, String> metadata, boolean isTicketClosed) {
-        metadata.put("isTicketClosed", Boolean.toString(isTicketClosed));
-        ObjectMetadata newMetadata = new ObjectMetadata();
-        newMetadata.setContentLength(0L);
-        newMetadata.setUserMetadata(metadata);
-
-        /* Copy the ticket file to itself with the new metadata */
-        CopyObjectRequest copyRequest = CopyObjectRequest.builder()
-                .copySource(bucketName + "/" + ticketId)
-                .destinationBucket(bucketName)
-                .destinationKey(ticketId)
-                .metadataDirective(MetadataDirective.REPLACE)
-                .metadata(newMetadata.getUserMetadata())
-                .build();
-        s3Client.copyObject(copyRequest);
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(value.readAllBytes()));
+        logger.info("File uploaded to bucket({}): {}", bucketName, keyName);
     }
 }
 
