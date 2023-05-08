@@ -1,4 +1,4 @@
-package com.example.ceph.util;
+package com.sajayanegar.storage.util;
 
 import org.springframework.stereotype.Component;
 
@@ -8,7 +8,7 @@ import java.util.zip.*;
 
 @Component
 public class ZipUtil {
-    public static void zipDirectory(Path directoryPath, Path zipFilePath) throws IOException {
+    public void zipDirectory(Path directoryPath, Path zipFilePath) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(zipFilePath.toFile());
              ZipOutputStream zos = new ZipOutputStream(fos)) {
 
@@ -16,7 +16,7 @@ public class ZipUtil {
         }
     }
 
-    private static void zip(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {
+    private void zip(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {
         if (fileToZip.isHidden()) {
             return;
         }

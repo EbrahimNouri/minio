@@ -96,8 +96,8 @@ dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.56'
-    implementation 'software.amazon.awssdk:s3:2.20.56'
+    implementation group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.12.460'
+
 
     // https://mvnrepository.com/artifact/commons-io/commons-io
     implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'

@@ -1,4 +1,4 @@
-package com.example.ceph.exception;
+package com.sajayanegar.storage.exception;
 
 public class TicketClosedException extends RuntimeException {
     public TicketClosedException() {
