@@ -276,6 +276,8 @@ public class S3ServiceImpl implements S3Service {
             String key = s3Object.getKey();
             String destinationFilePath = destinationPath + "/" + key.substring(sourceKeyPrefix.length());
 
+            // TODO: 5/8/2023 check ↓
+
             if (s3Object.getSize() > 0) {
                 File file = new File(destinationFilePath);
                 file.getParentFile().mkdir();
