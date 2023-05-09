@@ -2,11 +2,10 @@ package com.sajayanegar.storage.config;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.sajayanegar.storage.util.Directories;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import com.amazonaws.services.s3.model.Region;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -16,20 +15,22 @@ import org.springframework.context.annotation.Primary;
 //@EnableContextInstanceData
 public class S3Config {
 
-    @Autowired
-    private Directories directories;
+//    @Autowired
+//    private Directories directories;
 
-    @Value("${aws.accessKeyId}")
-    private String accessKeyId;
+//    @Value("${aws.accessKeyId}")
+    private String accessKeyId = "hKUBnff1fgmhcqZr";
 
-    @Value("${aws.secretAccessKey}")
-    private String secretAccessKey;
+//    @Value("${aws.secretAccessKey}")
+    private String secretAccessKey = "obInxsFGvoCzMWYGmUGcCPYktbGdSpmj";
 
-    @Value("${aws.region}")
-    private String region;
+//    @Value("${aws.region}")
+    private String region = String.valueOf(Region.ME_UAE);
 
-    @Value("${s3.bucketName}")
+//    @Value("${s3.bucketName}")
     private String bucketName;
+
+    private String endpoint = "127.0.0.1:9000";
 
 //    @Value("{$s3.bucketName}")
 //    private String bucketName;
@@ -50,8 +51,8 @@ public class S3Config {
     public AmazonS3 amazonS3() {
         BasicAWSCredentials awsCredentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
 
-//        AwsClientBuilder.EndpointConfiguration endpointConfiguration =
-//                new AwsClientBuilder.EndpointConfiguration(s3EndpointUrl, s3Region);
+        AwsClientBuilder.EndpointConfiguration endpointConfiguration =
+                new AwsClientBuilder.EndpointConfiguration(endpoint, region);
 
 //        ClientConfiguration clientConfig = new ClientConfiguration();
 //        clientConfig.setProtocol(Protocol.HTTP);
@@ -59,7 +60,7 @@ public class S3Config {
         return AmazonS3ClientBuilder
                 .standard()
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
-//                .withEndpointConfiguration(endpointConfiguration)
+                .withEndpointConfiguration(endpointConfiguration)
                 .build();
     }
 

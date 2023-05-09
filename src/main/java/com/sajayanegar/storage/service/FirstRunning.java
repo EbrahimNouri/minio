@@ -2,15 +2,14 @@ package com.sajayanegar.storage.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.sajayanegar.storage.service.school.S3Service;
-import com.sajayanegar.storage.service.school.S3ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
+import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class FirstRunning {
 
     @Autowired
@@ -20,11 +19,10 @@ public class FirstRunning {
     private S3Service s3Service;
 
     // TODO: 5/8/2023 fill this
-    List<String> classes = new ArrayList<String>();
+    List<String> classesSchool = new ArrayList<>();
+    List<String> courses = new ArrayList<>();
 
     private final String year = String.valueOf(LocalDateTime.now().getYear());
-
-    private final String[] YEARS_DIR = new String[5];
 
     private String yearDirectories(int input) {
         switch (input) {
@@ -40,6 +38,29 @@ public class FirstRunning {
                 return year + "/Online class";
         }
         return null;
+    }
+
+    // TODO: 5/9/2023  
+//    public void createClassesOnlineDirectoires();
+
+    private void homeWorkDirectories(String bucket, int input) {
+
+        addClassDirectory(bucket, input);
+
+    }
+
+    private void creatCourseDirectories(String bucket){
+        for (String cours : courses) {
+            for (String s : classesSchool) {
+                createDirectory(bucket, year + "/" + s + "/" + cours);
+            }
+        }
+    }
+
+    private void addClassDirectory(String bucket, int input) {
+        for (int i = 1; i < classesSchool.size(); i++) {
+            createDirectory(bucket, year + yearDirectories(input) + "/" + classesSchool.indexOf(i));
+        }
     }
 
     private void createDirectory(String bucket, String key) {
@@ -65,11 +86,12 @@ public class FirstRunning {
     }
 
 
-    public void createDirectory(String bucket) {
+    public void createRootDirectory(String bucket) {
 
         createDirectory(bucket, year);
         for (int i = 0; i < 5; i++) {
             createDirectory(bucket, yearDirectories(i));
+
             switch (i) {
                 case 0:
                     continue;

@@ -92,7 +92,7 @@ dependencies {
 
     implementation group: 'com.ceph', name: 'rados', version: '0.5.0'
 //    implementation group: 'org.springframework.cloud', name: 'spring-cloud-starter-aws', version: '1.0.1.RELEASE'
-    implementation group: 'org.springframework', name: 'spring-web', version: '4.3.11.RELEASE'
+    implementation group: 'org.springframework', name: 'spring-web'
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.26'
 
     testImplementation 'junit:junit:4.13.2'
