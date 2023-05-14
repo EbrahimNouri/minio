@@ -1,6 +1,8 @@
 package com.sajayanegar.storage.controller;
 
+import com.sajayanegar.storage.dto.DownloadDto;
 import com.sajayanegar.storage.service.school.S3Service;
+import io.minio.errors.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,26 +11,35 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 @RestController
+@RequestMapping("/api")
 public class S3Controller {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private S3Service s3Service;
 
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("bucketName") String bucketName,
-                                             @RequestParam("objectKey") String objectKey,
-                                             @RequestParam("file") File file) throws IOException {
+    public /*ResponseEntity<String>*/ void uploadFile(@RequestParam("file") MultipartFile file,
+                                                      String key,
+                                                      String bucket)
+            throws IOException, ServerException, InsufficientDataException,
+            ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
 
-        s3Service.uploadFile(bucketName, objectKey, file);
+        logger.debug("Uploading file");
+
+        s3Service.uploadFile(bucket, key, file);
+/*
         return new ResponseEntity<>("File uploaded successfully", HttpStatus.OK);
+*/
     }
 
     @DeleteMapping("/delete")
@@ -42,16 +53,18 @@ public class S3Controller {
         }
     }
 
-    @GetMapping("/download/{objectKey}")
-    public ResponseEntity<byte[]> downloadFile(@RequestParam("bucketName") String bucketName,
-                                               @PathVariable String objectKey) throws IOException {
 
-        byte[] data = s3Service.readFile(bucketName, objectKey);
+    //
+    @GetMapping("/download")
+    public ResponseEntity<byte[]> downloadFile(@RequestBody DownloadDto downloadDto)
+            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+
+        byte[] data = s3Service.readFile(downloadDto.getBucket(), downloadDto.getKey());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentLength(data.length);
-        headers.setContentDispositionFormData("attachment", objectKey);
+        headers.setContentDispositionFormData("attachment", downloadDto.getKey());
 
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
