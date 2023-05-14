@@ -1,0 +1,28 @@
+stages:
+  - deploy
+dev_deploy:
+  stage: deploy
+  script:
+    - cd /opt/razmandegan_dev/deploy/
+    - bash update_specific_service.sh storage dev
+  only:
+    - dev
+debug_deploy:
+  stage: deploy
+  script:
+    - cd /opt/razmandegan_debug/deploy/
+    - bash update_specific_service.sh storage debug
+  only:
+    - debug
+master_deploy:
+  stage: deploy
+  script:
+    - ssh "$USER"@"$APP_SERVER" 'cd /opt/backschool_master/deploy/ && bash update_specific_service.sh storage master && exit'
+  only:
+    - master
+prod-deploy:       # This job runs in the deploy stage, on prod server.
+  stage: deploy
+  script:
+    - ssh "$DONAP_USER"@"$DONAP_PROD" 'cd /opt/backschool/deploy/ && bash update_specific_service.sh storage prod && exit'
+  only:
+    - prod
