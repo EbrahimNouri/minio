@@ -55,17 +55,24 @@ public class S3ServiceImpl implements S3Service {
 //    }
 
     @Override
-    public void createBucket(String bucket) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public void createBucket(String bucket) {
 
-        if (s3Client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
-            throw new BucketExistException("Bucket already exists for " + bucket);
+        try {
+            if (s3Client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
+                throw new BucketExistException("Bucket already exists for " + bucket);
 
-        s3Client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+
+            s3Client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException |
+                 InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException |
+                 XmlParserException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     // TODO: 5/1/2023 1)
     @Override
-    public void uploadFile(String bucketName, String objectKey, MultipartFile file) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public void uploadFile(String bucketName, String objectKey, MultipartFile file) {
 
 //        if (readFile(bucketName, "/" + uuid) == null)
 //            //search in database for nationalCode and get uuid from database
@@ -96,14 +103,20 @@ public class S3ServiceImpl implements S3Service {
 
 //        Instant instant = Instant.now().plus(7, ChronoUnit.DAYS);
 
-        s3Client.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectKey)
-                        .contentType(file.getContentType())
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .build()
-        );
+        try {
+            s3Client.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .contentType(file.getContentType())
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .build()
+            );
+        } catch (ErrorResponseException | InternalException | InvalidKeyException | InvalidResponseException |
+                 IOException | NoSuchAlgorithmException | ServerException | XmlParserException |
+                 InsufficientDataException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
 //    @Override
@@ -161,12 +174,19 @@ public class S3ServiceImpl implements S3Service {
     //
 //    // TODO: 5/1/2023 2)
     @Override
-    public byte[] readFile(String bucketName, String objectKey) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public byte[] readFile(String bucketName, String objectKey) {
 
-        return s3Client.getObject(GetObjectArgs.builder()
-                .bucket(bucketName)
-                .object(objectKey).build()).readAllBytes();
+        try {
+            return s3Client.getObject(GetObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey).build()).readAllBytes();
+        } catch (IOException | ErrorResponseException | InsufficientDataException | InternalException |
+                 InvalidKeyException | InvalidResponseException | NoSuchAlgorithmException | ServerException |
+                 XmlParserException e) {
+            logger.error(e.getMessage(), e);
+        }
 
+        return null;
     }
 
     //        byte[] data = outputStream.toByteArray();
@@ -204,7 +224,7 @@ public class S3ServiceImpl implements S3Service {
     }
 
     //
-    // TODO: 5/1/2023 10)
+    // TODO: 5/1/2023 10) not working properly
     @Override
     public void deleteObjectsInDirectory(String bucketName, String prefix) {
         try {
@@ -213,7 +233,7 @@ public class S3ServiceImpl implements S3Service {
 
             for (Result<Item> result : results) {
                 Item item = result.get();
-                    s3Client.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(item.objectName()).build());
+                s3Client.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(item.objectName()).build());
             }
             // حذف دایرکتوری خود دستی
             s3Client.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(prefix).build());
@@ -221,13 +241,34 @@ public class S3ServiceImpl implements S3Service {
             logger.error("Failed to delete directory " + e.getMessage(), e);
         }
     }
-//
-//    // TODO: 5/1/2023 14)
-//    @Override
-//    public void setBucketQuota(String bucketName, long quotaBytes) {
-//        s3Util.setBucketQuota(bucketName, quotaBytes);
-//        logger.info("limiting space storage");
-//    }
+
+    // TODO: 5/1/2023 14)
+    @Override
+    public void setBucketQuota(String bucketName, long quotaBytes) {
+        try {
+            if (s3Client.bucketExists(
+                    BucketExistsArgs.builder().bucket(bucketName).build())) {
+
+                String policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal" +
+                        "\":{\"AWS\":\"*\"},\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource" +
+                        "\":[\"arn:aws:s3:::" + bucketName + "\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":" +
+                        "\"*\"},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*" +
+                        "\"],\"Condition\":{\"NumericLessThanEquals\":{\"s3:object-size\":" + quotaBytes + "}}}]}";
+
+
+                s3Client.setBucketPolicy(
+                        SetBucketPolicyArgs.builder()
+                                .bucket(bucketName)
+                                .config(policy)
+                                .build()
+                );
+            }
+        } catch (ServerException | InsufficientDataException | IOException | NoSuchAlgorithmException |
+                 InvalidKeyException | InvalidResponseException | XmlParserException | InternalException |
+                 ErrorResponseException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
 //
 //
 //    // TODO: 4/30/2023 resolve that ↓ 15)
@@ -516,4 +557,5 @@ public class S3ServiceImpl implements S3Service {
 ////        s3Client.putObject(putObjectRequest);
 ////        logger.info("File uploaded to bucket({}): {}", bucketName, keyName);
 ////    }
+
 }

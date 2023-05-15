@@ -25,10 +25,10 @@ public interface S3Service {
     void createDirectory(String bucketName, String directoryName);
 //
     void deleteObjectsInDirectory(String bucketName, String directoryName);
-//
-//    void setBucketQuota(String bucketName, long quotaBytes);
-//
-//
+
+    void setBucketQuota(String bucketName, long quotaBytes);
+
+
 //    // TODO: 4/30/2023 resolve that ↓ 15)
 //    void showBucketStorageUsage(String bucketName) throws IOException;
 //

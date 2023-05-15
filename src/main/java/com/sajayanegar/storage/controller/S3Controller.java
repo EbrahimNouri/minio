@@ -92,4 +92,10 @@ public class S3Controller {
 
         return ResponseEntity.ok(message);
     }
+
+    @PutMapping("/setBucketQuota")
+    public ResponseEntity<String> setBucketQuota(String bucketName, long bucketQuota){
+        s3Service.setBucketQuota(bucketName, bucketQuota);
+        return ResponseEntity.ok("set bucket quota successfully");
+    }
 }
