@@ -117,6 +117,12 @@ dependencies {
 
     implementation group: 'io.minio', name: 'minio', version: '8.4.5'
 
+//    implementation 'org.javaswift:joss:0.11.4'
+    // https://mvnrepository.com/artifact/org.javaswift/joss
+    implementation group: 'org.javaswift', name: 'joss', version: '0.10.2'
+
+
+
 }
 
 tasks.named('test') {

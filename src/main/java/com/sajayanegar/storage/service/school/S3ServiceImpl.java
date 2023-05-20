@@ -5,7 +5,11 @@ import com.sajayanegar.storage.exception.BucketExistException;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.Item;
+import io.minio.messages.LifecycleConfiguration;
 import io.minio.messages.ObjectMetadata;
+import io.minio.messages.QuoteFields;
+import org.javaswift.joss.model.Account;
+import org.javaswift.joss.model.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +26,9 @@ import java.util.UUID;
 
 @Component
 public class S3ServiceImpl implements S3Service {
+
+    @Autowired
+    private Account account;
 
     private final Long NATIONAL_CODE = new Random(10000L).nextLong();
 
@@ -245,29 +252,32 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 14)
     @Override
     public void setBucketQuota(String bucketName, long quotaBytes) {
-        try {
-            if (s3Client.bucketExists(
-                    BucketExistsArgs.builder().bucket(bucketName).build())) {
-
-                String policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal" +
-                        "\":{\"AWS\":\"*\"},\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource" +
-                        "\":[\"arn:aws:s3:::" + bucketName + "\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":" +
-                        "\"*\"},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*" +
-                        "\"],\"Condition\":{\"NumericLessThanEquals\":{\"s3:object-size\":" + quotaBytes + "}}}]}";
-
-
-                s3Client.setBucketPolicy(
-                        SetBucketPolicyArgs.builder()
-                                .bucket(bucketName)
-                                .config(policy)
-                                .build()
-                );
-            }
-        } catch (ServerException | InsufficientDataException | IOException | NoSuchAlgorithmException |
-                 InvalidKeyException | InvalidResponseException | XmlParserException | InternalException |
-                 ErrorResponseException e) {
-            logger.error(e.getMessage(), e);
-        }
+//        try {
+//            if (s3Client.bucketExists(
+//                    BucketExistsArgs.builder().bucket(bucketName).build())) {
+//
+//                String policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal" +
+//                        "\":{\"AWS\":\"*\"},\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource" +
+//                        "\":[\"arn:aws:s3:::" + bucketName + "\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":" +
+//                        "\"*\"},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*" +
+//                        "\"],\"Condition\":{\"NumericLessThanEquals\":{\"s3:object-size\":" + quotaBytes + "}}}]}";
+//
+//
+//                s3Client.setBucketPolicy(
+//                        SetBucketPolicyArgs.builder()
+//                                .bucket(bucketName)
+//                                .config(policy)
+//                                .build()
+//                );
+//            }
+//        } catch (ServerException | InsufficientDataException | IOException | NoSuchAlgorithmException |
+//                 InvalidKeyException | InvalidResponseException | XmlParserException | InternalException |
+//                 ErrorResponseException e) {
+//            logger.error(e.getMessage(), e);
+//        }
+//
+        Container container = account.getContainer(bucketName);
+        container.setQuota(new Quota(newBucketSize));
     }
 //
 //
