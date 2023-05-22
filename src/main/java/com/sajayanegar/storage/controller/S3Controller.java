@@ -1,8 +1,8 @@
 package com.sajayanegar.storage.controller;
 
-import com.sajayanegar.storage.dto.DownloadDto;
 import com.sajayanegar.storage.service.school.S3Service;
 import io.minio.errors.*;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -26,65 +27,88 @@ public class S3Controller {
     @Autowired
     private S3Service s3Service;
 
+    @PostMapping("/createBucket/{bucket}")
+    public void createBucket(@PathVariable String bucket) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        s3Service.createBucket(bucket);
+    }
 
+    @GetMapping("/showBucketStorageUsage/{bucketName}")
+    public Map<String, String> showBucketStorageUsage(@PathVariable String bucketName) {
+
+
+        try {
+            return s3Service.showBucketStorageUsage(bucketName);
+        } catch (IOException | ServerException | InsufficientDataException | ErrorResponseException |
+                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
+                 InternalException e) {
+            logger.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @SneakyThrows
     @PostMapping("/upload")
-    public /*ResponseEntity<String>*/ void uploadFile(@RequestParam("file") MultipartFile file,
-                                                      String key,
-                                                      String bucket)
-            throws IOException, ServerException, InsufficientDataException,
-            ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file,
+                                             String key,
+                                             String bucket) {
 
         logger.debug("Uploading file");
-
-        s3Service.uploadFile(bucket, key, file);
-/*
-        return new ResponseEntity<>("File uploaded successfully", HttpStatus.OK);
-*/
-    }
-
-    @DeleteMapping("/delete")
-    public ResponseEntity<String> deleteFile(@RequestParam("bucketName") String bucketName,
-                                             @RequestParam("objectKey") String objectKey) {
         try {
-            s3Service.deleteFile(bucketName, objectKey);
-            return new ResponseEntity<>("File deleted successfully", HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error deleting file", HttpStatus.INTERNAL_SERVER_ERROR);
+            s3Service.uploadFile(bucket, key, file);
+            return new ResponseEntity<>("File uploaded successfully", HttpStatus.OK);
+        } catch (IOException | ServerException | InsufficientDataException | ErrorResponseException |
+                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
+                 InternalException e) {
+            logger.error(e.getMessage(), e);
         }
+        return null;
+    }
+
+    @DeleteMapping("/delete") // TODO: 5/22/2023 tested
+    public ResponseEntity<String> deleteFile(@RequestParam String bucket,
+                                             @RequestParam String object) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+
+        s3Service.deleteFile(bucket, object);
+        return new ResponseEntity<>("File deleted successfully", HttpStatus.OK);
+
     }
 
 
-    //
-    @GetMapping("/download")
-    public ResponseEntity<byte[]> downloadFile(@RequestBody DownloadDto downloadDto)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    @GetMapping("/download") // TODO: 5/22/2023 tested
+    public ResponseEntity<byte[]> downloadFile(@RequestParam String bucket, String key) {
 
-        byte[] data = s3Service.readFile(downloadDto.getBucket(), downloadDto.getKey());
-
+        byte[] data = new byte[0];
+        try {
+            data = s3Service.readFile(bucket, key);
+        } catch (IOException | ServerException | InsufficientDataException | ErrorResponseException |
+                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
+                 InternalException e) {
+            logger.error(e.getMessage(), e);
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentLength(data.length);
-        headers.setContentDispositionFormData("attachment", downloadDto.getKey());
+        headers.setContentDispositionFormData("attachment", key);
 
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 
-    @PostMapping("/directory")
-    public ResponseEntity<String> createDirectory(@RequestParam("bucketName") String bucketName,
-                                                  @RequestParam("directoryName") String directoryName) {
-
+    @PostMapping("/directory") // TODO: 5/22/2023 tested 
+    public ResponseEntity<String> createDirectory(@RequestParam String bucket,
+                                                  @RequestParam String directory) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
 
         // Upload the empty object to S3
-        s3Service.createDirectory(bucketName, directoryName);
+        s3Service.createDirectory(bucket, directory);
 
         return ResponseEntity.ok("Directory created successfully");
     }
 
-    @DeleteMapping("/directory")
-    public ResponseEntity<String> deleteObjectsInDirectory(@RequestParam("bucketName") String bucketName,
-                                                           @RequestParam("directoryName") String directoryName) {
+    @DeleteMapping("/directory") // TODO: 5/22/2023 tested
+    public ResponseEntity<String> deleteObjectsInDirectory(@RequestParam String bucket,
+                                                           @RequestParam String directory)
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
 
-        s3Service.deleteObjectsInDirectory(bucketName, directoryName);
+        s3Service.deleteObjectsInDirectory(bucket, directory);
 
         String message = "All objects in directory deleted successfully";
 
@@ -94,8 +118,51 @@ public class S3Controller {
     }
 
     @PutMapping("/setBucketQuota")
-    public ResponseEntity<String> setBucketQuota(String bucketName, long bucketQuota){
+    public ResponseEntity<String> setBucketQuota(String bucketName, long bucketQuota) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         s3Service.setBucketQuota(bucketName, bucketQuota);
         return ResponseEntity.ok("set bucket quota successfully");
+    }
+
+    @GetMapping("/backupDir") // TODO: 5/22/2023 tested
+    public ResponseEntity<String> getBackupDir(
+            @RequestParam String bucketName,
+            @RequestParam String source,
+            @RequestParam String destination) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        s3Service.backupDirectory(bucketName, source, destination);
+        return ResponseEntity.ok("get backup directory successfully");
+    }
+
+    @GetMapping("getFileSize") // TODO: 5/22/2023 tested
+    public String getFileSize(@RequestParam String bucketName, String objectKey) {
+        try {
+            return s3Service.getFileSize(bucketName, objectKey) + "byte";
+        } catch (IOException | ServerException | InsufficientDataException | ErrorResponseException |
+                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
+                 InternalException e) {
+            logger.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @GetMapping("/getFolderCreationDate") // TODO: 5/22/2023 tested
+    public String getFolderCreationDate(@RequestParam String bucketName, String folderKey) {
+        try {
+            return s3Service.getFolderCreationDate(bucketName, folderKey).toString();
+        } catch (IOException | ServerException | InsufficientDataException | ErrorResponseException |
+                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
+                 InternalException e) {
+            logger.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @GetMapping("/getFolderSize") // TODO: 5/22/2023 tested
+    public Long getFolderSize(@RequestParam String bucket, String key) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        return s3Service.getFolderSize(bucket, key);
+    }
+
+    @GetMapping("test")
+    public String hello() {
+        return "hello world";
     }
 }

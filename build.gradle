@@ -111,7 +111,7 @@ dependencies {
 
     testImplementation 'junit:junit:4.13.2'
 
-    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.76'
+//    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.76'
 
     implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
 
@@ -119,7 +119,10 @@ dependencies {
 
 //    implementation 'org.javaswift:joss:0.11.4'
     // https://mvnrepository.com/artifact/org.javaswift/joss
-    implementation group: 'org.javaswift', name: 'joss', version: '0.10.2'
+//    implementation group: 'org.javaswift', name: 'joss', version: '0.10.2'
+
+    //swagger
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
 
 
 

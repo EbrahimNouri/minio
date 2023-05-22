@@ -1,15 +1,15 @@
 package com.sajayanegar.storage.dto;
 
-public class DownloadDto {
+public class GetDto {
     private String key;
     private String bucket;
 
-    public DownloadDto(String key, String bucket) {
+    public GetDto(String key, String bucket) {
         this.key = key;
         this.bucket = bucket;
     }
 
-    public DownloadDto() {
+    public GetDto() {
     }
 
     public String getKey() {
