@@ -28,8 +28,8 @@ public class S3Controller {
     private S3Service s3Service;
 
     @PostMapping("/createBucket/{bucket}")
-    public void createBucket(@PathVariable String bucket) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        s3Service.createBucket(bucket);
+    public String createBucket(@PathVariable String bucket) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException, InterruptedException {
+        return s3Service.createBucket(bucket);
     }
 
     @GetMapping("/showBucketStorageUsage/{bucketName}")
@@ -159,8 +159,8 @@ public class S3Controller {
         return "hello world";
     }
 
-    @GetMapping("/bashTest")
-    public String bashTest(){
-        return s3Service.testScript();
-    }
+//    @GetMapping("/bashTest")
+//    public String bashTest(){
+//        return s3Service.testScript();
+//    }
 }

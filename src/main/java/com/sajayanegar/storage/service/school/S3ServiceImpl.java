@@ -2,6 +2,7 @@ package com.sajayanegar.storage.service.school;
 
 
 import com.sajayanegar.storage.exception.BucketExistException;
+import com.sajayanegar.storage.util.CommandRunner;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.*;
@@ -33,23 +34,47 @@ public class S3ServiceImpl implements S3Service {
     @Autowired
     private MinioClient s3Client;
 
+    @Autowired
+    private CommandRunner commandRunner;
+
     @Override // TODO: 5/22/2023 tested but cant set quota bucket
 //    @SneakyThrows
-    public void createBucket(String bucket)
+    public String createBucket(String bucket) {
+
+        try {
+            if (s3Client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
+                throw new BucketExistException("Bucket already exists for " + bucket);
+
+
+            commandRunner.runCommand2("docker exec storage_minio-client_1 mc mb myminio/" + bucket);
+
+            commandRunner.runCommand2("docker exec storage_minio-client_1 mc admin bucket set myminio/"
+                    + bucket + " object-lock enable");
+
+            setBucketQuota(bucket, 524_288_000L);
+
+        } catch (ServerException | InsufficientDataException | ErrorResponseException | IOException |
+                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
+                 InternalException e) {
+            return e.getMessage();
+        }
+        return null;
+    }
+
+    // TODO: 5/1/2023 14)
+    @Override
+    public void setBucketQuota(String bucketName, long quotaBytes)
             throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
             NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
             InternalException {
 
-        if (s3Client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
-            throw new BucketExistException("Bucket already exists for " + bucket);
 
+        if (!s3Client.bucketExists(
+                BucketExistsArgs.builder().bucket(bucketName).build()))
+            throw new RuntimeException("Bucket does not exist");
 
-        s3Client.makeBucket(MakeBucketArgs.builder().bucket(bucket).objectLock(true).build());
-
-        s3Client.setBucketPolicy(SetBucketPolicyArgs.builder()
-                .bucket(bucket)
-                // TODO: 5/22/2023 here
-                .build());
+        commandRunner.runCommand2("docker exec storage_minio-client_1 mc quota set myminio/"
+                + bucketName + " --size " + quotaBytes + "B");
     }
 
     // TODO: 5/1/2023 1)
@@ -156,34 +181,6 @@ public class S3ServiceImpl implements S3Service {
 
         System.out.println("Password applied to object successfully.");
     }
-
-
-    // TODO: 5/1/2023 14)
-    @Override
-    public void setBucketQuota(String bucketName, long quotaBytes)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
-            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
-            InternalException {
-
-
-        if (s3Client.bucketExists(
-                BucketExistsArgs.builder().bucket(bucketName).build())) {
-
-            String policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal" +
-                    "\":{\"AWS\":\"*\"},\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource" +
-                    "\":[\"arn:aws:s3:::" + bucketName + "\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":" +
-                    "\"*\"},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*" +
-                    "\"],\"Condition\":{\"NumericLessThanEquals\":{\"s3:object-size\":" + quotaBytes + "}}}]}";
-
-            s3Client.setBucketPolicy(
-                    SetBucketPolicyArgs.builder()
-                            .bucket(bucketName)
-                            .config(policy)
-                            .build()
-            );
-        }
-    }
-
 
     // TODO: 4/30/2023 resolve that ↓ 15)
     @Override
@@ -557,32 +554,32 @@ public class S3ServiceImpl implements S3Service {
                 .build());
     }
 
-    @Override
-    public String testScript() {
-        try {
-            // Bash command
-            String command = "docker exec -it storage_mc_1 mc admin bucket quota TARGET/BUCKET --hard LIMIT";
-
-            // Create the process builder
-            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
-
-            // Start the process
-            Process process = processBuilder.start();
-
-            // Get the output from the process
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-
-            // Wait for the process to complete
-            int exitCode = process.waitFor();
-            return("Command executed with exit code: " + exitCode);
-
-        } catch (IOException | InterruptedException e) {
-            return "Command failed ";
-        }
-
-    }
+//    @Override
+//    public String testScript() {
+//        try {
+//            // Bash command
+//            String command = "docker exec -it storage_minio-client_1 mc mb myminio/lsls"/*minio/mybucket*/;
+//
+//            // Create the process builder
+//            ProcessBuilder processBuilder = new ProcessBuilder(/*"bash",*/ "-c", command);
+//
+//            // Start the process
+//            Process process = processBuilder.start();
+//
+//            // Get the output from the process
+//            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                System.out.println(line);
+//            }
+//
+//            // Wait for the process to complete
+//            int exitCode = process.waitFor();
+//            return("Command executed with exit code: " + exitCode);
+//
+//        } catch (IOException | InterruptedException e) {
+//            return "Command failed ";
+//        }
+//
+//    }
 }

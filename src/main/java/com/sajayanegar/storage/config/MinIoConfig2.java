@@ -11,10 +11,10 @@ public class MinIoConfig2 {
     private String endpoint = "http://localhost:9000";
 
 //    @Value("${s3.accessKey}")
-    private String accessKey = "9f7VLRpfB9IbsUztmuP5";
+    private String accessKey = "hCmPy5JxbWHCkAio61nJ";
 
 //    @Value("${s3.secretKey}")
-    private String secretKey = "oQqjf2uBkXtJgp71xwwMfRHSZprJvfg5JNy9Sckw";
+    private String secretKey = "cWBGx9uXbAjRv20i4FcB3S6agmOTMsq9VxKmaRNm";
 
     @Bean
     public MinioClient minioClient() {

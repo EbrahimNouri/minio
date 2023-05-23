@@ -1,27 +1,30 @@
-
-version: '3.9'
+version: '3'
 
 services:
   minio:
     image: minio/minio
-    container_name: minio
     ports:
-      - 9000:9000
-      - 9001:9001
+        - 9000:9000
+        - 9001:9001
     environment:
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
-    command: server /data
-  mc:
-    image: minio/mc:latest
+        - MINIO_ACCESS_KEY=username
+        - MINIO_SECRET_KEY=password
+    volumes:
+        - /path/to/data:/data
+        - /path/to/config:/root/.minio
+    command: server --console-address ":9001" /data
+  minio-client:
+    image: minio/mc
     depends_on:
       - minio
+    volumes:
+      - /path/to/config:/root/.mc
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      mc config host add myminio http://minio:9000 username password &&
+      mc alias set myminio http://minio:9000
+
     tty: true
-#    entrypoint: >
-#      /bin/sh -c "
-#      /usr/bin/mc config host rm local;
-#      /usr/bin/mc config host add --quiet --api s3v4 local http://myminio:9000 minio minio123;
-#      /usr/bin/mc rb --force local/somebucketname1/;
-#      /usr/bin/mc mb --quiet local/somebucketname1/;
-#      /usr/bin/mc policy set public local/somebucketname1;
-#      "
+
+#volumes:
+#  minio_data:
