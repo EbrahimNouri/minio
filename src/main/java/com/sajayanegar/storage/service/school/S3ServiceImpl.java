@@ -4,10 +4,7 @@ package com.sajayanegar.storage.service.school;
 import com.sajayanegar.storage.exception.BucketExistException;
 import io.minio.*;
 import io.minio.errors.*;
-import io.minio.messages.DeleteObject;
-import io.minio.messages.Item;
-import io.minio.messages.ObjectLockConfiguration;
-import io.minio.messages.ObjectMetadata;
+import io.minio.messages.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +36,9 @@ public class S3ServiceImpl implements S3Service {
     @Override // TODO: 5/22/2023 tested but cant set quota bucket
 //    @SneakyThrows
     public void createBucket(String bucket)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         if (s3Client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
             throw new BucketExistException("Bucket already exists for " + bucket);
@@ -56,7 +55,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 1)
     @Override
     public void uploadFile(String bucketName, String objectKey, MultipartFile file)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         s3Client.uploadObject(UploadObjectArgs.builder()
                 .bucket(bucketName)
@@ -68,7 +69,10 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 3) tested
     @Override
     public void deleteFile(String bucketName, String objectKey)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
+
         logger.debug("deleting file");
 
         s3Client.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(objectKey).build());
@@ -78,7 +82,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 2) tested
     @Override
     public byte[] readFile(String bucketName, String objectKey)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         return s3Client.getObject(GetObjectArgs.builder()
                 .bucket(bucketName)
@@ -89,7 +95,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 7) tested
     @Override
     public void createDirectory(String bucketName, String directoryName)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         // Add a trailing slash to the directory name to indicate that it's a "directory"
         String key = directoryName + "/";
@@ -113,7 +121,9 @@ public class S3ServiceImpl implements S3Service {
     //  TODO: 5/1/2023 10) tested
     @Override
     public void deleteObjectsInDirectory(String bucketName, String prefix)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
         Iterable<Result<Item>> results = s3Client.listObjects(ListObjectsArgs.builder()
                 .prefix(prefix)
                 .bucket(bucketName)
@@ -130,7 +140,10 @@ public class S3ServiceImpl implements S3Service {
     }
 
     //    @Override
-    public void setPassword(String bucket, String objectName, String password) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public void setPassword(String bucket, String objectName, String password)
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         SetObjectLockConfigurationArgs setObjectLockConfigurationArgs =
                 SetObjectLockConfigurationArgs
@@ -148,7 +161,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 14)
     @Override
     public void setBucketQuota(String bucketName, long quotaBytes)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
 
         if (s3Client.bucketExists(
@@ -159,7 +174,6 @@ public class S3ServiceImpl implements S3Service {
                     "\":[\"arn:aws:s3:::" + bucketName + "\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":" +
                     "\"*\"},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*" +
                     "\"],\"Condition\":{\"NumericLessThanEquals\":{\"s3:object-size\":" + quotaBytes + "}}}]}";
-
 
             s3Client.setBucketPolicy(
                     SetBucketPolicyArgs.builder()
@@ -174,7 +188,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 4/30/2023 resolve that ↓ 15)
     @Override
     public Map<String, String> showBucketStorageUsage(String bucketName)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         Map<String, String> map = new HashMap<>();
         Iterable<Result<Item>> results = s3Client.listObjects(ListObjectsArgs.builder().bucket(bucketName).build());
@@ -206,8 +222,9 @@ public class S3ServiceImpl implements S3Service {
     public void backupDirectory(String bucketName,
                                 String sourceKeyPrefix,
                                 String destinationPath)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
         List<Result<Item>> resultList = new ArrayList<Result<Item>>();
 
         // List all objects in the source directory
@@ -258,7 +275,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/2/2023 5) tested
     @Override
     public Long getFileSize(String bucketName, String objectKey)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         StatObjectResponse statObjectResponse = s3Client.statObject(StatObjectArgs.builder().bucket(bucketName).object(objectKey).build());
         return statObjectResponse.size();
@@ -268,7 +287,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/2/2023 6)
     @Override
     public Map<String, String> getFileFormatAndUploadTime(String bucketName, String objectKey)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         Map<String, String> returnMap = new HashMap<>();
 
@@ -291,7 +312,9 @@ public class S3ServiceImpl implements S3Service {
     //    // TODO: 5/2/2023 8)
     @Override
     public void uploadZip(String bucketName, String key, File zipFile)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws IOException, ServerException, InsufficientDataException, ErrorResponseException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
 
@@ -327,7 +350,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/2/2023 9)
     @Override
     public File downloadDirectoryAsZip(String bucketName, String directoryName, String zipObjectName)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws IOException, ServerException, InsufficientDataException, ErrorResponseException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         File tempZipFile = null;
 
@@ -354,7 +379,10 @@ public class S3ServiceImpl implements S3Service {
     }
 
     private void zipMinIODirectoryRecursive(String bucketName, String directoryName, String parentPath, ZipOutputStream zipOutputStream)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws IOException, ServerException, InsufficientDataException, ErrorResponseException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
+
         Iterable<Result<Item>> objectNames = s3Client.listObjects(ListObjectsArgs.builder()
                 .bucket(bucketName)
                 .prefix(directoryName)
@@ -396,7 +424,10 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 12) tested
     @Override
     public long getFolderSize(String bucketName, String folderKey)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
+
         long totalSize = 0;
 
         Iterable<Result<Item>> results = s3Client.listObjects(
@@ -418,7 +449,9 @@ public class S3ServiceImpl implements S3Service {
     // TODO: 5/1/2023 13) tested
     @Override
     public LocalDateTime getFolderCreationDate(String bucketName, String folderKey)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         LocalDateTime folderCreationDate = null;
 
@@ -452,7 +485,10 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public boolean isExistsDirectory(String bucket, String directoryName)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
+
         return s3Client.statObject(
                 StatObjectArgs.builder()
                         .bucket(bucket)
@@ -462,7 +498,10 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public void deleteDirectory(String bucket, String key) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public void deleteDirectory(String bucket, String key)
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
 
         // List all objects in the directory
         Iterable<Result<Item>> results = s3Client.listObjects(ListObjectsArgs.builder()
@@ -482,5 +521,68 @@ public class S3ServiceImpl implements S3Service {
                 .bucket(bucket)
                 .objects(deleteObjects)
                 .build());
+    }
+
+    @Override
+    public void moveObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey)
+            throws ServerException, InsufficientDataException, ErrorResponseException,
+            IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException,
+            XmlParserException, InternalException {
+
+        s3Client.copyObject(CopyObjectArgs.builder()
+                .source(CopySource.builder()
+                        .bucket(sourceBucket)
+                        .object(sourceKey)
+                        .build())
+                .bucket(destinationBucket)
+                .object(destinationKey)
+                .build());
+
+        deleteFile(sourceBucket, sourceKey);
+    }
+
+    @Override
+    public void copyObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey)
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+            InternalException {
+
+        s3Client.copyObject(CopyObjectArgs.builder()
+                .source(CopySource.builder()
+                        .bucket(sourceBucket)
+                        .object(sourceKey)
+                        .build())
+                .bucket(destinationBucket)
+                .object(destinationKey)
+                .build());
+    }
+
+    @Override
+    public String testScript() {
+        try {
+            // Bash command
+            String command = "docker exec -it storage_mc_1 mc admin bucket quota TARGET/BUCKET --hard LIMIT";
+
+            // Create the process builder
+            ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
+
+            // Start the process
+            Process process = processBuilder.start();
+
+            // Get the output from the process
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+
+            // Wait for the process to complete
+            int exitCode = process.waitFor();
+            return("Command executed with exit code: " + exitCode);
+
+        } catch (IOException | InterruptedException e) {
+            return "Command failed ";
+        }
+
     }
 }

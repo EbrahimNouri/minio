@@ -33,17 +33,10 @@ public class S3Controller {
     }
 
     @GetMapping("/showBucketStorageUsage/{bucketName}")
-    public Map<String, String> showBucketStorageUsage(@PathVariable String bucketName) {
+    public Map<String, String> showBucketStorageUsage(@PathVariable String bucketName) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
 
 
-        try {
             return s3Service.showBucketStorageUsage(bucketName);
-        } catch (IOException | ServerException | InsufficientDataException | ErrorResponseException |
-                 NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException | XmlParserException |
-                 InternalException e) {
-            logger.error(e.getMessage(), e);
-        }
-        return null;
     }
 
     @SneakyThrows
@@ -164,5 +157,10 @@ public class S3Controller {
     @GetMapping("test")
     public String hello() {
         return "hello world";
+    }
+
+    @GetMapping("/bashTest")
+    public String bashTest(){
+        return s3Service.testScript();
     }
 }

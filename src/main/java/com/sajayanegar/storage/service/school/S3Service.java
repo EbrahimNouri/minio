@@ -58,4 +58,10 @@ void uploadZip(String bucketName, String key, File zipFile) throws IOException, 
 
     @SneakyThrows
     void deleteDirectory(String bucket, String key) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+
+    void moveObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+
+    void copyObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+
+    String testScript();
 }
