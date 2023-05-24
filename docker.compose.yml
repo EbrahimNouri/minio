@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  mon:
+    image: ceph/daemon:latest
+    container_name: ceph-mon
+    network_mode: host
+    volumes:
+      - ceph-mon-data:/var/lib/ceph/mon
+    environment:
+      - CEPH_PUBLIC_NETWORK=0.0.0.0/0
+    command: mon
+
+  mgr:
+    image: ceph/daemon:latest
+    container_name: ceph-mgr
+    network_mode: host
+    volumes:
+      - ceph-mon-data:/var/lib/ceph/mon
+      - ceph-mgr-data:/var/lib/ceph/mgr
+    command: mgr
+
+  osd:
+    image: ceph/daemon:latest
+    container_name: ceph-osd
+    network_mode: host
+    privileged: true
+    volumes:
+      - ceph-osd-data:/var/lib/ceph/osd
+    command: osd_ceph_disk
+
+  mds:
+    image: ceph/daemon:latest
+    container_name: ceph-mds
+    network_mode: host
+    volumes:
+      - ceph-mds-data:/var/lib/ceph/mds
+    command: mds
+
+volumes:
+  ceph-mon-data:
+  ceph-mgr-data:
+  ceph-osd-data:
+  ceph-mds-data:
